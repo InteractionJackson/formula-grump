@@ -1,0 +1,423 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		E1A1B1A12C8F4E5A00123456 /* F1TelemetryTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1A02C8F4E5A00123456 /* F1TelemetryTrackerApp.swift */; };
+		E1A1B1A32C8F4E5A00123456 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1A22C8F4E5A00123456 /* ContentView.swift */; };
+		E1A1B1A52C8F4E5C00123456 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E1A1B1A42C8F4E5C00123456 /* Assets.xcassets */; };
+		E1A1B1A82C8F4E5C00123456 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E1A1B1A72C8F4E5C00123456 /* Preview Assets.xcassets */; };
+		E1A1B1B02C8F4E8000123456 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1AF2C8F4E8000123456 /* DashboardView.swift */; };
+		E1A1B1B22C8F4E9000123456 /* CircularGaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1B12C8F4E9000123456 /* CircularGaugeView.swift */; };
+		E1A1B1B42C8F4EA000123456 /* F1TelemetryPacket.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1B32C8F4EA000123456 /* F1TelemetryPacket.swift */; };
+		E1A1B1B62C8F4EB000123456 /* TelemetryReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1B52C8F4EB000123456 /* TelemetryReceiver.swift */; };
+		E1A1B1B82C8F4EC000123456 /* TelemetryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1B72C8F4EC000123456 /* TelemetryViewModel.swift */; };
+		E1A1B1BA2C8F4ED000123456 /* ConnectionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1B92C8F4ED000123456 /* ConnectionStatusView.swift */; };
+		E1A1B1C62C8F4F3000123456 /* SplitsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1C52C8F4F3000123456 /* SplitsView.swift */; };
+		E1A1B1C72C8F4F3000123457 /* CarConditionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1C82C8F4F3000123458 /* CarConditionView.swift */; };
+		E1A1B1BB2C8F4EE000123456 /* SimpleTelemetryReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1BC2C8F4EE000123456 /* SimpleTelemetryReceiver.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		E1A1B19D2C8F4E5A00123456 /* F1TelemetryTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = F1TelemetryTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E1A1B1A02C8F4E5A00123456 /* F1TelemetryTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = F1TelemetryTrackerApp.swift; sourceTree = "<group>"; };
+		E1A1B1A22C8F4E5A00123456 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		E1A1B1A42C8F4E5C00123456 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E1A1B1A72C8F4E5C00123456 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		E1A1B1AF2C8F4E8000123456 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		E1A1B1B12C8F4E9000123456 /* CircularGaugeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircularGaugeView.swift; sourceTree = "<group>"; };
+		E1A1B1B32C8F4EA000123456 /* F1TelemetryPacket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = F1TelemetryPacket.swift; sourceTree = "<group>"; };
+		E1A1B1B52C8F4EB000123456 /* TelemetryReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryReceiver.swift; sourceTree = "<group>"; };
+		E1A1B1B72C8F4EC000123456 /* TelemetryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryViewModel.swift; sourceTree = "<group>"; };
+		E1A1B1B92C8F4ED000123456 /* ConnectionStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionStatusView.swift; sourceTree = "<group>"; };
+		E1A1B1C52C8F4F3000123456 /* SplitsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitsView.swift; sourceTree = "<group>"; };
+		E1A1B1C82C8F4F3000123458 /* CarConditionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarConditionView.swift; sourceTree = "<group>"; };
+		E1A1B1BC2C8F4EE000123456 /* SimpleTelemetryReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleTelemetryReceiver.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E1A1B19A2C8F4E5A00123456 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		E1A1B1942C8F4E5A00123456 = {
+			isa = PBXGroup;
+			children = (
+				E1A1B19F2C8F4E5A00123456 /* F1TelemetryTracker */,
+				E1A1B19E2C8F4E5A00123456 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E1A1B19E2C8F4E5A00123456 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E1A1B19D2C8F4E5A00123456 /* F1TelemetryTracker.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E1A1B19F2C8F4E5A00123456 /* F1TelemetryTracker */ = {
+			isa = PBXGroup;
+			children = (
+				E1A1B1A02C8F4E5A00123456 /* F1TelemetryTrackerApp.swift */,
+				E1A1B1A22C8F4E5A00123456 /* ContentView.swift */,
+				E1A1B1C12C8F4EF000123456 /* Models */,
+				E1A1B1C22C8F4F0000123456 /* Network */,
+				E1A1B1C32C8F4F1000123456 /* ViewModels */,
+				E1A1B1C42C8F4F2000123456 /* Views */,
+				E1A1B1A42C8F4E5C00123456 /* Assets.xcassets */,
+				E1A1B1A62C8F4E5C00123456 /* Preview Content */,
+			);
+			path = F1TelemetryTracker;
+			sourceTree = "<group>";
+		};
+		E1A1B1C12C8F4EF000123456 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				E1A1B1B32C8F4EA000123456 /* F1TelemetryPacket.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		E1A1B1C22C8F4F0000123456 /* Network */ = {
+			isa = PBXGroup;
+			children = (
+				E1A1B1B52C8F4EB000123456 /* TelemetryReceiver.swift */,
+				E1A1B1BC2C8F4EE000123456 /* SimpleTelemetryReceiver.swift */,
+			);
+			path = Network;
+			sourceTree = "<group>";
+		};
+		E1A1B1C32C8F4F1000123456 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				E1A1B1B72C8F4EC000123456 /* TelemetryViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		E1A1B1C42C8F4F2000123456 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				E1A1B1AF2C8F4E8000123456 /* DashboardView.swift */,
+				E1A1B1B12C8F4E9000123456 /* CircularGaugeView.swift */,
+				E1A1B1B92C8F4ED000123456 /* ConnectionStatusView.swift */,
+				E1A1B1C52C8F4F3000123456 /* SplitsView.swift */,
+				E1A1B1C82C8F4F3000123458 /* CarConditionView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		E1A1B1A62C8F4E5C00123456 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				E1A1B1A72C8F4E5C00123456 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E1A1B19C2C8F4E5A00123456 /* F1TelemetryTracker */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E1A1B1AB2C8F4E5C00123456 /* Build configuration list for PBXNativeTarget "F1TelemetryTracker" */;
+			buildPhases = (
+				E1A1B1992C8F4E5A00123456 /* Sources */,
+				E1A1B19A2C8F4E5A00123456 /* Frameworks */,
+				E1A1B19B2C8F4E5A00123456 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = F1TelemetryTracker;
+			productName = F1TelemetryTracker;
+			productReference = E1A1B19D2C8F4E5A00123456 /* F1TelemetryTracker.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E1A1B1952C8F4E5A00123456 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					E1A1B19C2C8F4E5A00123456 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = E1A1B1982C8F4E5A00123456 /* Build configuration list for PBXProject "F1TelemetryTracker" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = E1A1B1942C8F4E5A00123456;
+			productRefGroup = E1A1B19E2C8F4E5A00123456 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E1A1B19C2C8F4E5A00123456 /* F1TelemetryTracker */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E1A1B19B2C8F4E5A00123456 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E1A1B1A82C8F4E5C00123456 /* Preview Assets.xcassets in Resources */,
+				E1A1B1A52C8F4E5C00123456 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E1A1B1992C8F4E5A00123456 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E1A1B1B22C8F4E9000123456 /* CircularGaugeView.swift in Sources */,
+				E1A1B1A32C8F4E5A00123456 /* ContentView.swift in Sources */,
+				E1A1B1B02C8F4E8000123456 /* DashboardView.swift in Sources */,
+				E1A1B1A12C8F4E5A00123456 /* F1TelemetryTrackerApp.swift in Sources */,
+				E1A1B1B42C8F4EA000123456 /* F1TelemetryPacket.swift in Sources */,
+				E1A1B1B62C8F4EB000123456 /* TelemetryReceiver.swift in Sources */,
+				E1A1B1B82C8F4EC000123456 /* TelemetryViewModel.swift in Sources */,
+				E1A1B1BA2C8F4ED000123456 /* ConnectionStatusView.swift in Sources */,
+				E1A1B1C62C8F4F3000123456 /* SplitsView.swift in Sources */,
+				E1A1B1C72C8F4F3000123457 /* CarConditionView.swift in Sources */,
+				E1A1B1BB2C8F4EE000123456 /* SimpleTelemetryReceiver.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		E1A1B1A92C8F4E5C00123456 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		E1A1B1AA2C8F4E5C00123456 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		E1A1B1AC2C8F4E5C00123456 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"F1TelemetryTracker/Preview Content\"";
+				DEVELOPMENT_TEAM = 9HP4Y647R2;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.formulagrump.F1TelemetryTracker;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		E1A1B1AD2C8F4E5C00123456 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"F1TelemetryTracker/Preview Content\"";
+				DEVELOPMENT_TEAM = 9HP4Y647R2;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.formulagrump.F1TelemetryTracker;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		E1A1B1982C8F4E5A00123456 /* Build configuration list for PBXProject "F1TelemetryTracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E1A1B1A92C8F4E5C00123456 /* Debug */,
+				E1A1B1AA2C8F4E5C00123456 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E1A1B1AB2C8F4E5C00123456 /* Build configuration list for PBXNativeTarget "F1TelemetryTracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E1A1B1AC2C8F4E5C00123456 /* Debug */,
+				E1A1B1AD2C8F4E5C00123456 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E1A1B1952C8F4E5A00123456 /* Project object */;
+}
