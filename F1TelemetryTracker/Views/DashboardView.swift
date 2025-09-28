@@ -17,6 +17,21 @@ struct DashboardView: View {
         }
     
     var body: some View {
+        TabView {
+            // Page 1: Dashboard tiles
+            dashboardPage
+                .tag(0)
+            
+            // Page 2: Leaderboard
+            LeaderboardView()
+                .environmentObject(telemetryViewModel)
+                .tag(1)
+        }
+        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+        .background(T.canvas)
+    }
+    
+    private var dashboardPage: some View {
         ZStack {
             // App background
             T.canvas
@@ -47,19 +62,21 @@ struct DashboardView: View {
                         // LEFT COLUMN
                         VStack(spacing: 20) {
                             // Speed, RPM, DRS & Gear tile
-                    VStack(spacing: T.gap) {
+                    VStack(spacing: 0) {
                         // TOP SECTION: White background with title and main content
-                        VStack(alignment: .leading, spacing: T.gap) {
-                            // Title row
+                        VStack(alignment: .leading, spacing: 0) {
+                            // Title row with its own padding
                             HStack(spacing: 10) {
                                 Image(systemName: "speedometer")
                                     .font(.system(size: 18, weight: .regular))
                                     .foregroundStyle(T.text)
                                 Text("Speed, RPM DRS & Gear")
-                                    .font(.system(size: 18, weight: .semibold))
+                                    .font(.system(size: 12, weight: .semibold))
                                     .foregroundStyle(T.text)
                                 Spacer()
                             }
+                            .padding(.horizontal, T.padCard)
+                            .padding(.top, T.padCard)
                             
                             // Main content: Speed, RPM/ERS gauge, Gear in three equal columns
                             HStack(spacing: 0) {
@@ -79,11 +96,12 @@ struct DashboardView: View {
                                 // RPM/ERS gauge column (center)
                                 CircularGaugeView(rpmValue: telemetryViewModel.rpmValue, ersValue: telemetryViewModel.ersValue)
                                     .scaleEffect(0.75)
+                                    .frame(width: 150, height: 150) // Fixed size to prevent extra space reservation
                                     .frame(maxWidth: .infinity)
                                 
                                 // Gear column (right)
                                 VStack(spacing: 6) {
-                                    Text(gearDisplayText)
+                                    Text(gearDisplayText(for: telemetryViewModel.gear))
                                         .font(.system(size: 48, weight: .bold, design: .rounded))
                                         .foregroundStyle(T.text)
                                     
@@ -94,8 +112,9 @@ struct DashboardView: View {
                                 }
                                 .frame(maxWidth: .infinity)
                             }
+                            .padding(.horizontal, T.padCard)
+                            .padding(.bottom, 16)
                         }
-                        .padding(T.padCard)
                         .background(T.topCard)
                         
                         // BOTTOM SECTION: Darker background with input controls
@@ -106,15 +125,18 @@ struct DashboardView: View {
                                     ForEach(0..<10, id: \.self) { index in
                                         Rectangle()
                                             .fill(index < max(0, min(10, Int((telemetryViewModel.brakePercent * 10).isFinite ? telemetryViewModel.brakePercent * 10 : 0))) ? Color.red : Color.red.opacity(0.2))
-                                            .frame(height: 16)
+                                            .frame(height: 12)
                                             .cornerRadius(1)
                                     }
                                 }
                                 
-                                Text("Brake")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundStyle(T.textSub)
-                                    .tracking(0.5)
+                                HStack {
+                                    Spacer()
+                                    Text("BRAKE")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundStyle(T.textSub)
+                                        .tracking(0.5)
+                                }
                             }
                             .frame(maxWidth: .infinity)
                             
@@ -145,15 +167,18 @@ struct DashboardView: View {
                                     ForEach(0..<10, id: \.self) { index in
                                         Rectangle()
                                             .fill(index < max(0, min(10, Int((telemetryViewModel.throttlePercent * 10).isFinite ? telemetryViewModel.throttlePercent * 10 : 0))) ? Color.green : Color.green.opacity(0.2))
-                                            .frame(height: 16)
+                                            .frame(height: 12)
                                             .cornerRadius(1)
                                     }
                                 }
                                 
-                                Text("Throttle")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundStyle(T.textSub)
-                                    .tracking(0.5)
+                                HStack {
+                                    Text("THROTTLE")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundStyle(T.textSub)
+                                        .tracking(0.5)
+                                    Spacer()
+                                }
                             }
                             .frame(maxWidth: .infinity)
                         }
@@ -173,6 +198,7 @@ struct DashboardView: View {
                                 tyresSurfaceTemperature: telemetryViewModel.tyresSurfaceTemperature
                             )
                             .environmentObject(telemetryViewModel)
+                            .frame(maxHeight: .infinity)
                     }
                     
                     // RIGHT COLUMN
@@ -186,6 +212,11 @@ struct DashboardView: View {
                         lastLapTime: formatTime(telemetryViewModel.lastLapTime),
                         bestLapTime: formatTime(telemetryViewModel.bestLapTime)
                     )
+                        
+                        // Track Overview tile - expands to fill remaining space
+                        TrackOverviewTile()
+                            .environmentObject(telemetryViewModel)
+                            .frame(maxHeight: .infinity)
                 }
                 }
                 .padding(.horizontal, 20)
@@ -202,14 +233,15 @@ struct DashboardView: View {
         .onDisappear {
             telemetryViewModel.disconnect()
         }
+        }
     }
     
     // Computed property for gear display
-    private var gearDisplayText: String {
-        switch telemetryViewModel.gear {
+    private func gearDisplayText(for gear: Int) -> String {
+        switch gear {
         case -1: return "R"
         case 0: return "N"
-        default: return "\(telemetryViewModel.gear)"
+        default: return "\(gear)"
         }
     }
     
@@ -228,16 +260,16 @@ struct DashboardView: View {
     
     private func formatSectorTime(_ seconds: Float) -> String {
         if seconds <= 0 {
-            return "-:-:-"
+            return "--:--.---"
         }
         
         let totalMs = Int(seconds * 1000)
-        let secs = totalMs / 1000
+        let minutes = totalMs / 60000
+        let secs = (totalMs % 60000) / 1000
         let ms = totalMs % 1000
         
-        return String(format: "%d:%d:%d", secs / 10, (secs % 10), ms / 100)
+        return String(format: "%d:%02d.%03d", minutes, secs, ms)
     }
-}
 
 
 // MARK: - Helpers

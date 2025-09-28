@@ -1,7 +1,25 @@
 import Foundation
 
-// MARK: - F1 24 Telemetry Packet Structures
+// MARK: - F1 24 Telemetry Packet Structures & Validation
 // Based on the official F1 24 UDP telemetry specification
+
+// MARK: - Packet Size Constants
+struct PacketSizes {
+    static let header: Int = 29
+    static let carTelemetryDataSize: Int = 60  // CORRECTED: F1 24 official spec
+    static let participantDataSize: Int = 56   // Correct F1 24 size
+    
+    static let expectedSizes: [UInt8: Int] = [
+        0: 1349,  // Motion
+        1: 753,   // Session - CORRECTED from 644 to 753  
+        2: 1285,  // LapData
+        3: 45,    // Event (variable, minimum)
+        4: 1350,  // Participants
+        6: 1352,  // CarTelemetry (29 + 22*60 + 3) = 1352 bytes
+        7: 1239,  // CarStatus
+        10: 1367, // CarDamage (29 + 22*60 + 18)
+    ]
+}
 
 struct PacketHeader {
     let packetFormat: UInt16         // 2024 for F1 24
@@ -16,6 +34,54 @@ struct PacketHeader {
     let overallFrameIdentifier: UInt32 // Overall identifier for the frame
     let playerCarIndex: UInt8        // Index of player's car in the array
     let secondaryPlayerCarIndex: UInt8 // Index of secondary player's car (255 if no second player)
+    
+    // MARK: - Validation
+    func isValid() -> Bool {
+        return packetFormat == 2024 && gameYear == 24
+    }
+    
+    func validatePacketSize(_ actualSize: Int) -> Bool {
+        guard let expectedSize = PacketSizes.expectedSizes[packetId] else {
+            // Unknown packet type - allow for future expansion
+            return actualSize >= PacketSizes.header
+        }
+        return actualSize == expectedSize
+    }
+}
+
+// MARK: - Packet Validation Result
+enum PacketValidationResult {
+    case valid
+    case invalidFormat(UInt16)
+    case invalidSize(expected: Int, actual: Int)
+    case unknownPacketType(UInt8)
+}
+
+// MARK: - Motion Packet (ID: 0)
+struct CarMotionData {
+    let worldPositionX: Float            // World space X position - metres
+    let worldPositionY: Float            // World space Y position
+    let worldPositionZ: Float            // World space Z position
+    let worldVelocityX: Float            // Velocity in world space X – metres/s
+    let worldVelocityY: Float            // Velocity in world space Y
+    let worldVelocityZ: Float            // Velocity in world space Z
+    let worldForwardDirX: Int16          // World space forward X direction (normalised)
+    let worldForwardDirY: Int16          // World space forward Y direction (normalised)
+    let worldForwardDirZ: Int16          // World space forward Z direction (normalised)
+    let worldRightDirX: Int16            // World space right X direction (normalised)
+    let worldRightDirY: Int16            // World space right Y direction (normalised)
+    let worldRightDirZ: Int16            // World space right Z direction (normalised)
+    let gForceLateral: Float             // Lateral G-Force component
+    let gForceLongitudinal: Float        // Longitudinal G-Force component
+    let gForceVertical: Float            // Vertical G-Force component
+    let yaw: Float                       // Yaw angle in radians
+    let pitch: Float                     // Pitch angle in radians
+    let roll: Float                      // Roll angle in radians
+}
+
+struct PacketMotionData {
+    let header: PacketHeader             // Header
+    let carMotionData: [CarMotionData]   // Data for all cars on track (22 cars)
 }
 
 // MARK: - Car Telemetry Packet (ID: 6)
@@ -188,6 +254,51 @@ struct PacketLapData {
     let lapData: [LapData]               // Lap data for all cars on track
     let timeTrialPBCarIdx: UInt8         // Index of Personal Best car in time trial (255 if invalid)
     let timeTrialRivalCarIdx: UInt8      // Index of Rival car in time trial (255 if invalid)
+}
+
+// MARK: - Participants Packet (ID: 4)
+struct ParticipantData {
+    let aiControlled: UInt8              // Whether the vehicle is AI (1) or Human (0) controlled
+    let driverId: UInt8                  // Driver id - see appendix, 255 if network human
+    let networkId: UInt8                 // Network id – unique identifier for network players
+    let teamId: UInt8                    // Team id - see appendix
+    let myTeam: UInt8                    // My team flag – 1 = My Team, 0 = otherwise
+    let raceNumber: UInt8                // Race number of the car
+    let nationality: UInt8               // Nationality of the driver
+    let name: String                     // Name of participant in UTF-8 format – null terminated. Will be truncated with … (U+2026) if too long
+    let yourTelemetry: UInt8             // The player's UDP setting, 0 = restricted, 1 = public
+}
+
+struct PacketParticipantsData {
+    let header: PacketHeader             // Header
+    let numActiveCars: UInt8             // Number of active cars in the data – should match number of cars on HUD
+    let participants: [ParticipantData]  // Participant data for all cars (22 cars)
+}
+
+// MARK: - Car Damage Packet (ID: 10)
+struct CarDamageData {
+    let tyresDamage: [Float]             // Tyre damage (percentage) [RL, RR, FL, FR]
+    let tyresWear: [UInt8]               // Tyre wear (percentage) [RL, RR, FL, FR]
+    let engineDamage: UInt8              // Engine damage (percentage)
+    let gearBoxDamage: UInt8             // Gearbox damage (percentage)
+    let frontLeftWingDamage: Int8        // Front left wing damage (percentage)
+    let frontRightWingDamage: Int8       // Front right wing damage (percentage)
+    let rearWingDamage: Int8             // Rear wing damage (percentage)
+    let floorDamage: Int8                // Floor damage (percentage)
+    let diffuserDamage: Int8             // Diffuser damage (percentage)
+    let sidepodDamage: Int8              // Sidepod damage (percentage)
+    let drsFault: UInt8                  // Indicator for DRS fault, 0 = OK, 1 = fault
+    let ersFault: UInt8                  // Indicator for ERS fault, 0 = OK, 1 = fault
+    let gearBoxDrivethrough: UInt8       // Gearbox damage drivethrough penalty
+    let engineDrivethrough: UInt8        // Engine damage drivethrough penalty
+    let wingDrivethrough: UInt8          // Wing damage drivethrough penalty
+    let engineWear: UInt8                // Engine wear (percentage)
+    let gearBoxWear: UInt8               // Gearbox wear (percentage)
+}
+
+struct PacketCarDamageData {
+    let header: PacketHeader             // Header
+    let carDamageData: [CarDamageData]   // Data for all cars on track (22 cars)
 }
 
 // MARK: - Packet Type Identifiers

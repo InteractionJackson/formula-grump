@@ -62,7 +62,7 @@ struct CircularGaugeView: View {
             // Center labels with safe conversion
             VStack(spacing: 4) {
                 // RPM value (safe conversion)
-                Text("\(max(0, min(Int.max, Int((rpmValue * maxRPM).isFinite ? rpmValue * maxRPM : 0))))")
+                Text(formatRPM(rpmValue))
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
@@ -75,7 +75,7 @@ struct CircularGaugeView: View {
                     .frame(width: 40)
                 
                     // ERS value (safe conversion)
-                    Text("\(max(0, min(Int.max, Int((ersValue * maxERS).isFinite ? ersValue * maxERS : 0))))")
+                    Text(formatERS(ersValue))
                         .font(.title3)
                         .fontWeight(.semibold)
                         .foregroundColor(.yellow)
@@ -85,6 +85,19 @@ struct CircularGaugeView: View {
                     .foregroundColor(.secondary)
             }
         }
+    }
+    
+    // MARK: - Helper Functions
+    private func formatRPM(_ value: Double) -> String {
+        guard value.isFinite && value >= 0 else { return "--" }
+        let rpm = Int(value * maxRPM)
+        return "\(max(0, min(99999, rpm)))"
+    }
+    
+    private func formatERS(_ value: Double) -> String {
+        guard value.isFinite && value >= 0 else { return "--" }
+        let ers = Int(value * maxERS)
+        return "\(max(0, min(9999, ers)))"
     }
 }
 

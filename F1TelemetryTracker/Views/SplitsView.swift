@@ -38,7 +38,7 @@ struct SplitsView: View {
                         .font(.system(size: 18, weight: .regular))
                         .foregroundStyle(T.text)
                     Text("Splits")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(T.text)
                     Spacer()
                 }
@@ -51,7 +51,7 @@ struct SplitsView: View {
                         .tracking(0.5)
                     Spacer()
                     Text(currentLapTime)
-                        .font(.system(size: 62, weight: .black, design: .rounded))
+                        .font(.custom("SFProDisplay-Semibold", size: 32))
                         .monospacedDigit()
                         .foregroundStyle(T.text)
                         .lineLimit(1)
@@ -140,12 +140,12 @@ private struct LapTile: View {
 struct SplitsView_Previews: PreviewProvider {
     static var previews: some View {
         SplitsView(
-            currentLapTime: "01:23:456",
-            sector1Time: "28:123",
-            sector2Time: "32:456",
-            sector3Time: "22:877",
-            lastLapTime: "01:23:456",
-            bestLapTime: "01:21:234"
+            currentLapTime: "--:--.---",
+            sector1Time: "--:--.---",
+            sector2Time: "--:--.---",
+            sector3Time: "--:--.---",
+            lastLapTime: "--:--.---",
+            bestLapTime: "--:--.---"
         )
         .padding()
         .background(Color(hex: "#F6F8FA"))

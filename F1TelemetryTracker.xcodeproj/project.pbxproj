@@ -14,12 +14,19 @@
 		E1A1B1B02C8F4E8000123456 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1AF2C8F4E8000123456 /* DashboardView.swift */; };
 		E1A1B1B22C8F4E9000123456 /* CircularGaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1B12C8F4E9000123456 /* CircularGaugeView.swift */; };
 		E1A1B1B42C8F4EA000123456 /* F1TelemetryPacket.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1B32C8F4EA000123456 /* F1TelemetryPacket.swift */; };
-		E1A1B1B62C8F4EB000123456 /* TelemetryReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1B52C8F4EB000123456 /* TelemetryReceiver.swift */; };
 		E1A1B1B82C8F4EC000123456 /* TelemetryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1B72C8F4EC000123456 /* TelemetryViewModel.swift */; };
 		E1A1B1BA2C8F4ED000123456 /* ConnectionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1B92C8F4ED000123456 /* ConnectionStatusView.swift */; };
 		E1A1B1C62C8F4F3000123456 /* SplitsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1C52C8F4F3000123456 /* SplitsView.swift */; };
 		E1A1B1C72C8F4F3000123457 /* CarConditionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1C82C8F4F3000123458 /* CarConditionView.swift */; };
 		E1A1B1BB2C8F4EE000123456 /* SimpleTelemetryReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1BC2C8F4EE000123456 /* SimpleTelemetryReceiver.swift */; };
+		E1A1B1D12C8F500000123456 /* TrackGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1D22C8F500000123456 /* TrackGeometry.swift */; };
+		E1A1B1D32C8F501000123456 /* TrackGeometryCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1D42C8F501000123456 /* TrackGeometryCache.swift */; };
+		E1A1B1D52C8F502000123456 /* TrackLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1D62C8F502000123456 /* TrackLibrary.swift */; };
+		E1A1B1D72C8F503000123456 /* TrackMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1D82C8F503000123456 /* TrackMapView.swift */; };
+		E1A1B1D92C8F504000123456 /* TrackOverviewStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1DA2C8F504000123456 /* TrackOverviewStyle.swift */; };
+		E1A1B1DB2C8F505000123456 /* TrackOverviewTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1DC2C8F505000123456 /* TrackOverviewTile.swift */; };
+		E1A1B1DD2C8F506000123456 /* TrackProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1DE2C8F506000123456 /* TrackProjector.swift */; };
+		E1A1B1E12C8F508000123456 /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1E22C8F508000123456 /* LeaderboardView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,12 +38,19 @@
 		E1A1B1AF2C8F4E8000123456 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		E1A1B1B12C8F4E9000123456 /* CircularGaugeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircularGaugeView.swift; sourceTree = "<group>"; };
 		E1A1B1B32C8F4EA000123456 /* F1TelemetryPacket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = F1TelemetryPacket.swift; sourceTree = "<group>"; };
-		E1A1B1B52C8F4EB000123456 /* TelemetryReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryReceiver.swift; sourceTree = "<group>"; };
 		E1A1B1B72C8F4EC000123456 /* TelemetryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryViewModel.swift; sourceTree = "<group>"; };
 		E1A1B1B92C8F4ED000123456 /* ConnectionStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionStatusView.swift; sourceTree = "<group>"; };
 		E1A1B1C52C8F4F3000123456 /* SplitsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitsView.swift; sourceTree = "<group>"; };
 		E1A1B1C82C8F4F3000123458 /* CarConditionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarConditionView.swift; sourceTree = "<group>"; };
 		E1A1B1BC2C8F4EE000123456 /* SimpleTelemetryReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleTelemetryReceiver.swift; sourceTree = "<group>"; };
+		E1A1B1D22C8F500000123456 /* TrackGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackGeometry.swift; sourceTree = "<group>"; };
+		E1A1B1D42C8F501000123456 /* TrackGeometryCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackGeometryCache.swift; sourceTree = "<group>"; };
+		E1A1B1D62C8F502000123456 /* TrackLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackLibrary.swift; sourceTree = "<group>"; };
+		E1A1B1D82C8F503000123456 /* TrackMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackMapView.swift; sourceTree = "<group>"; };
+		E1A1B1DA2C8F504000123456 /* TrackOverviewStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackOverviewStyle.swift; sourceTree = "<group>"; };
+		E1A1B1DC2C8F505000123456 /* TrackOverviewTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackOverviewTile.swift; sourceTree = "<group>"; };
+		E1A1B1DE2C8F506000123456 /* TrackProjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackProjector.swift; sourceTree = "<group>"; };
+		E1A1B1E22C8F508000123456 /* LeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -92,7 +106,6 @@
 		E1A1B1C22C8F4F0000123456 /* Network */ = {
 			isa = PBXGroup;
 			children = (
-				E1A1B1B52C8F4EB000123456 /* TelemetryReceiver.swift */,
 				E1A1B1BC2C8F4EE000123456 /* SimpleTelemetryReceiver.swift */,
 			);
 			path = Network;
@@ -114,8 +127,24 @@
 				E1A1B1B92C8F4ED000123456 /* ConnectionStatusView.swift */,
 				E1A1B1C52C8F4F3000123456 /* SplitsView.swift */,
 				E1A1B1C82C8F4F3000123458 /* CarConditionView.swift */,
+				E1A1B1E22C8F508000123456 /* LeaderboardView.swift */,
+				E1A1B1DF2C8F507000123456 /* TrackOverview */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		E1A1B1DF2C8F507000123456 /* TrackOverview */ = {
+			isa = PBXGroup;
+			children = (
+				E1A1B1D22C8F500000123456 /* TrackGeometry.swift */,
+				E1A1B1D42C8F501000123456 /* TrackGeometryCache.swift */,
+				E1A1B1D62C8F502000123456 /* TrackLibrary.swift */,
+				E1A1B1D82C8F503000123456 /* TrackMapView.swift */,
+				E1A1B1DA2C8F504000123456 /* TrackOverviewStyle.swift */,
+				E1A1B1DC2C8F505000123456 /* TrackOverviewTile.swift */,
+				E1A1B1DE2C8F506000123456 /* TrackProjector.swift */,
+			);
+			path = TrackOverview;
 			sourceTree = "<group>";
 		};
 		E1A1B1A62C8F4E5C00123456 /* Preview Content */ = {
@@ -201,12 +230,19 @@
 				E1A1B1B02C8F4E8000123456 /* DashboardView.swift in Sources */,
 				E1A1B1A12C8F4E5A00123456 /* F1TelemetryTrackerApp.swift in Sources */,
 				E1A1B1B42C8F4EA000123456 /* F1TelemetryPacket.swift in Sources */,
-				E1A1B1B62C8F4EB000123456 /* TelemetryReceiver.swift in Sources */,
 				E1A1B1B82C8F4EC000123456 /* TelemetryViewModel.swift in Sources */,
 				E1A1B1BA2C8F4ED000123456 /* ConnectionStatusView.swift in Sources */,
 				E1A1B1C62C8F4F3000123456 /* SplitsView.swift in Sources */,
 				E1A1B1C72C8F4F3000123457 /* CarConditionView.swift in Sources */,
 				E1A1B1BB2C8F4EE000123456 /* SimpleTelemetryReceiver.swift in Sources */,
+				E1A1B1D12C8F500000123456 /* TrackGeometry.swift in Sources */,
+				E1A1B1D32C8F501000123456 /* TrackGeometryCache.swift in Sources */,
+				E1A1B1D52C8F502000123456 /* TrackLibrary.swift in Sources */,
+				E1A1B1D72C8F503000123456 /* TrackMapView.swift in Sources */,
+				E1A1B1D92C8F504000123456 /* TrackOverviewStyle.swift in Sources */,
+				E1A1B1DB2C8F505000123456 /* TrackOverviewTile.swift in Sources */,
+				E1A1B1DD2C8F506000123456 /* TrackProjector.swift in Sources */,
+				E1A1B1E12C8F508000123456 /* LeaderboardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

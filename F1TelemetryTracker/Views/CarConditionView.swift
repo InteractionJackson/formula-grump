@@ -35,7 +35,7 @@ struct CarConditionView: View {
                         .font(.system(size: 18, weight: .regular))
                         .foregroundStyle(T.text)
                     Text("Car Condition")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(T.text)
                     Spacer()
                 }
@@ -44,9 +44,11 @@ struct CarConditionView: View {
                 DynamicCarSVG(
                     engineCondition: engineCondition,
                     brakeConditions: brakeConditions,
-                    tyreConditions: tyreConditions
+                    tyreConditions: tyreConditions,
+                    wingConditions: wingConditions
                 )
-                .frame(maxWidth: .infinity, maxHeight: 200)
+                .frame(maxWidth: .infinity)
+                .frame(maxHeight: .infinity)
             }
             .padding(T.padCard)
             .background(T.topCard)
@@ -69,10 +71,24 @@ struct CarConditionView: View {
     // MARK: - Computed Properties for Condition Assessment
     
     private var engineCondition: ComponentCondition {
+        // Combine temperature and damage for overall engine condition
         let temp = Int(engineTemperature)
-        if temp < 90 { return .good }
-        else if temp < 110 { return .warning }
-        else { return .critical }
+        let damage = Int(telemetryViewModel.engineDamage)
+        
+        // Temperature thresholds
+        let tempCondition: ComponentCondition
+        if temp < 90 { tempCondition = .good }
+        else if temp < 110 { tempCondition = .warning }
+        else { tempCondition = .critical }
+        
+        // Damage thresholds
+        let damageCondition: ComponentCondition
+        if damage < 10 { damageCondition = .good }
+        else if damage < 30 { damageCondition = .warning }
+        else { damageCondition = .critical }
+        
+        // Return the worst condition
+        return [tempCondition, damageCondition].max { $0.severity < $1.severity } ?? .good
     }
     
     private var brakeConditions: [ComponentCondition] {
@@ -85,10 +101,40 @@ struct CarConditionView: View {
     }
     
     private var tyreConditions: [ComponentCondition] {
-        return tyresSurfaceTemperature.map { temp in
-            let tempInt = Int(temp)
-            if tempInt < 80 { return .good }
-            else if tempInt < 100 { return .warning }
+        return (0..<4).map { index in
+            // Combine temperature and damage for overall tyre condition
+            let temp = index < tyresSurfaceTemperature.count ? Int(tyresSurfaceTemperature[index]) : 0
+            let damage = index < telemetryViewModel.tyresDamage.count ? telemetryViewModel.tyresDamage[index] : 0.0
+            
+            // Temperature thresholds
+            let tempCondition: ComponentCondition
+            if temp < 80 { tempCondition = .good }
+            else if temp < 100 { tempCondition = .warning }
+            else { tempCondition = .critical }
+            
+            // Damage thresholds
+            let damageCondition: ComponentCondition
+            if damage < 10.0 { damageCondition = .good }
+            else if damage < 30.0 { damageCondition = .warning }
+            else { damageCondition = .critical }
+            
+            // Return the worst condition
+            return [tempCondition, damageCondition].max { $0.severity < $1.severity } ?? .good
+        }
+    }
+    
+    // Wing conditions based on damage data
+    private var wingConditions: [ComponentCondition] {
+        let wingDamages = [
+            telemetryViewModel.frontLeftWingDamage,
+            telemetryViewModel.frontRightWingDamage,
+            telemetryViewModel.rearWingDamage
+        ]
+        
+        return wingDamages.map { damage in
+            let damageAbs = abs(Int(damage))
+            if damageAbs < 10 { return .good }
+            else if damageAbs < 30 { return .warning }
             else { return .critical }
         }
     }
@@ -100,12 +146,14 @@ struct DynamicCarSVG: View {
     let engineCondition: ComponentCondition
     let brakeConditions: [ComponentCondition]
     let tyreConditions: [ComponentCondition]
+    let wingConditions: [ComponentCondition]
     
     var body: some View {
         DynamicSVGWebView(
             engineCondition: engineCondition,
             brakeConditions: brakeConditions,
-            tyreConditions: tyreConditions
+            tyreConditions: tyreConditions,
+            wingConditions: wingConditions
         )
         .aspectRatio(117/291, contentMode: .fit)
     }
@@ -115,6 +163,7 @@ struct DynamicSVGWebView: UIViewRepresentable {
     let engineCondition: ComponentCondition
     let brakeConditions: [ComponentCondition]
     let tyreConditions: [ComponentCondition]
+    let wingConditions: [ComponentCondition]
     
     func makeUIView(context: Context) -> WKWebView {
         let webView = WKWebView()
@@ -142,6 +191,11 @@ struct DynamicSVGWebView: UIViewRepresentable {
         let frBrakeColor = brakeConditions.count > 3 ? brakeConditions[3].hexColor : ComponentCondition.good.hexColor
         
         let engineColor = engineCondition.hexColor
+        
+        // Wing colors: [frontLeft, frontRight, rear]
+        let frontLeftWingColor = wingConditions.count > 0 ? wingConditions[0].hexColor : ComponentCondition.good.hexColor
+        let frontRightWingColor = wingConditions.count > 1 ? wingConditions[1].hexColor : ComponentCondition.good.hexColor
+        let rearWingColor = wingConditions.count > 2 ? wingConditions[2].hexColor : ComponentCondition.good.hexColor
         
         return """
         <!DOCTYPE html>
@@ -187,7 +241,9 @@ struct DynamicSVGWebView: UIViewRepresentable {
                     <path id="sidepod_right" d="M95 155C88.5 155 77.5 155 77.5 155L69.5 167L72.6016 173.5H81.5C81.5 173.5 82.3984 190 77.5 200.5C72.6016 211 66 216.5 66 216.5V250H69.5C69.5 250 71 235 74.5 227C78 219 95 185.5 95 155Z" fill="#30DB47" fill-opacity="0.3" stroke="#30DB47" stroke-width="1"/>
                     <rect id="Rectangle 18" x="55" y="218" width="7" height="32" rx="2" fill="#30DB47" fill-opacity="0.3" stroke="#30DB47" stroke-width="1"/>
                     <rect id="drs" x="38" y="256" width="42" height="12" rx="2" fill="#30DB47" fill-opacity="0.3" stroke="#30DB47" stroke-width="1"/>
-                    <path id="rear_wing" d="M27.4319 275.272C27.7658 273.937 28.9657 273 30.3423 273H86.5935C87.9996 273 89.217 273.977 89.522 275.349L92.1887 287.349C92.6051 289.223 91.1794 291 89.2602 291H27.3423C25.3906 291 23.9585 289.166 24.4319 287.272L27.4319 275.272Z" fill="#30DB47" fill-opacity="0.3" stroke="#30DB47" stroke-width="1"/>
+                    <path id="front_left_wing" d="M20 41.5C20 39.567 21.567 38 23.5 38H50C51.933 38 53.5 39.567 53.5 41.5V46.5C53.5 48.433 51.933 50 50 50H23.5C21.567 50 20 48.433 20 46.5V41.5Z" fill="\(frontLeftWingColor)" fill-opacity="0.3" stroke="\(frontLeftWingColor)" stroke-width="1"/>
+                    <path id="front_right_wing" d="M63.5 41.5C63.5 39.567 65.067 38 67 38H93.5C95.433 38 97 39.567 97 41.5V46.5C97 48.433 95.433 50 93.5 50H67C65.067 50 63.5 48.433 63.5 46.5V41.5Z" fill="\(frontRightWingColor)" fill-opacity="0.3" stroke="\(frontRightWingColor)" stroke-width="1"/>
+                    <path id="rear_wing" d="M27.4319 275.272C27.7658 273.937 28.9657 273 30.3423 273H86.5935C87.9996 273 89.217 273.977 89.522 275.349L92.1887 287.349C92.6051 289.223 91.1794 291 89.2602 291H27.3423C25.3906 291 23.9585 289.166 24.4319 287.272L27.4319 275.272Z" fill="\(rearWingColor)" fill-opacity="0.3" stroke="\(rearWingColor)" stroke-width="1"/>
                     <path id="engine" d="M50.5847 168.449C50.8305 167.591 51.6149 167 52.5072 167H65.4582C66.3668 167 67.1612 167.612 67.3924 168.491L69.1623 175.217C69.367 175.994 70.0175 176.574 70.8136 176.688L74.7828 177.255C75.7681 177.395 76.5 178.239 76.5 179.235V195.982C76.5 196.621 76.1938 197.223 75.6763 197.599L71.1269 200.908C71.0424 200.969 70.9629 201.037 70.889 201.111L66.9023 205.098C66.6393 205.361 66.4549 205.692 66.3697 206.054L64.8628 212.458C64.6502 213.362 63.8441 214 62.916 214H54.5366C53.6305 214 52.8376 213.391 52.6041 212.515L51.1223 206.959C51.0419 206.657 50.892 206.379 50.6847 206.145L47 202L41.0344 195.576C40.6909 195.206 40.5 194.719 40.5 194.215V179.259C40.5 178.253 41.2472 177.404 42.2449 177.276L46.9717 176.668C47.7636 176.566 48.4191 176.003 48.6392 175.235L50.5847 168.449Z" fill="\(engineColor)" fill-opacity="0.3" stroke="\(engineColor)" stroke-width="1"/>
                 </g>
                 <defs>
@@ -268,6 +324,14 @@ enum ComponentCondition {
         case .critical: return "#FF4444"
         }
     }
+    
+    var severity: Int {
+        switch self {
+        case .good: return 0
+        case .warning: return 1
+        case .critical: return 2
+        }
+    }
 }
 
 // MARK: - Helpers
@@ -278,10 +342,11 @@ enum ComponentCondition {
 struct CarConditionView_Previews: PreviewProvider {
     static var previews: some View {
         CarConditionView(
-            engineTemperature: 95,
-            brakesTemperature: [250, 280, 320, 290],
-            tyresSurfaceTemperature: [85, 88, 92, 87]
+            engineTemperature: 0,
+            brakesTemperature: [0, 0, 0, 0],
+            tyresSurfaceTemperature: [0, 0, 0, 0]
         )
+        .environmentObject(TelemetryViewModel())
         .padding()
         .background(Color(hex: "#F6F8FA"))
     }
