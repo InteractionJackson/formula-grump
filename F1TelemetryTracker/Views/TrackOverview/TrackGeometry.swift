@@ -8,6 +8,26 @@ protocol TrackGeometry {
     var bounds: CGRect { get }
 }
 
+// MARK: - Track Geometry Implementation
+struct TrackGeometryImpl: TrackGeometry, Equatable {
+    private let geometry: PolylineGeometry
+    
+    var path: CGPath { geometry.createPath() }
+    var bounds: CGRect { geometry.bounds }
+    
+    init(geometry: PolylineGeometry) {
+        self.geometry = geometry
+    }
+    
+    func point(at progress: CGFloat) -> CGPoint {
+        return geometry.point(at: progress)
+    }
+    
+    static func == (lhs: TrackGeometryImpl, rhs: TrackGeometryImpl) -> Bool {
+        return lhs.geometry == rhs.geometry
+    }
+}
+
 // MARK: - Polyline Track Geometry Implementation
 class PolylineTrackGeometry: TrackGeometry {
     let points: [CGPoint]  // Made accessible for track projection
@@ -303,11 +323,3 @@ class SVGTrackGeometry: TrackGeometry {
     }
 }
 
-// MARK: - CGPoint Distance Extension
-extension CGPoint {
-    func distance(to point: CGPoint) -> CGFloat {
-        let dx = x - point.x
-        let dy = y - point.y
-        return sqrt(dx * dx + dy * dy)
-    }
-}

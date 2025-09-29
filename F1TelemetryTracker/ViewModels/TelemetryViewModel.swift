@@ -548,24 +548,18 @@ class TelemetryViewModel: ObservableObject {
     private func calculateTrackProgress(from worldPosition: CGPoint) -> Float {
         // Get current track geometry
         let trackId = TrackId(rawValue: self.trackId) ?? .unknown
-        let trackProfile = TrackGeometryCache.shared.geometry(for: trackId)
+        let trackGeometry = TrackGeometryCache.shared.geometry(for: trackId)
         
         // Project world position onto track geometry
-        return projectWorldPositionToTrack(worldPosition: worldPosition, trackGeometry: trackProfile.geometry)
+        return projectWorldPositionToTrack(worldPosition: worldPosition, trackGeometry: trackGeometry)
     }
     
-    private func projectWorldPositionToTrack(worldPosition: CGPoint, trackGeometry: any TrackGeometry) -> Float {
+    private func projectWorldPositionToTrack(worldPosition: CGPoint, trackGeometry: PolylineGeometry) -> Float {
         // Transform world coordinates to track-relative coordinates
         let transformedPosition = transformWorldToTrackCoordinates(worldPosition: worldPosition)
         
-        // Get track path points
-        guard let polylineGeometry = trackGeometry as? PolylineTrackGeometry else {
-            // Fallback to simple distance calculation
-            let distance = sqrt(transformedPosition.x * transformedPosition.x + transformedPosition.y * transformedPosition.y)
-            return min(max(Float(distance) / 1000.0, 0.0), 1.0)
-        }
-        
-        let trackPoints = polylineGeometry.points
+        // Get track path points directly from PolylineGeometry
+        let trackPoints = trackGeometry.points
         guard trackPoints.count > 1 else { return 0.0 }
         
         // Find the closest point on the track to the transformed position

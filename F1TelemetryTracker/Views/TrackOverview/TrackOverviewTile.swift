@@ -3,28 +3,31 @@ import SwiftUI
 // MARK: - Track Overview Tile
 struct TrackOverviewTile: View {
     @EnvironmentObject var telemetryViewModel: TelemetryViewModel
-    @State private var currentTrackProfile: TrackProfile = TrackGeometryCache.shared.geometry(for: .unknown)
-    @State private var lastTrackId: Int8 = -1
+    @StateObject private var trackProfileStore = TrackProfileStore()
     
-    private func updateTrackProfileIfNeeded() {
-        let newTrackId = telemetryViewModel.trackId
+    // MARK: - Track Profile Store
+    private class TrackProfileStore: ObservableObject {
+        @Published var currentProfile: TrackProfile = TrackLibrary.loadTrackProfile(for: .unknown)
+        private var lastTrackId: Int8 = -1
         
-        // Only update if track ID has actually changed
-        guard newTrackId != lastTrackId else { return }
-        
-        let trackId = TrackId(rawValue: newTrackId) ?? .unknown
-        
-        #if DEBUG
-        if newTrackId != -1 && trackId == .unknown {
-            print("⚠️ TRACK MAPPING FAILED: Raw ID \(newTrackId) → .unknown")
-        } else if trackId != .unknown {
-            print("🏁 TRACK MAPPED: Raw ID \(newTrackId) → \(trackId.displayName)")
+        func updateIfNeeded(for newTrackId: Int8) {
+            guard newTrackId != lastTrackId else { return }
+            
+            let trackId = TrackId(rawValue: newTrackId) ?? .unknown
+            
+            #if DEBUG
+            if newTrackId != -1 && trackId == .unknown {
+                print("⚠️ TRACK MAPPING FAILED: Raw ID \(newTrackId) → .unknown")
+            } else if trackId != .unknown {
+                print("🏁 TRACK MAPPED: Raw ID \(newTrackId) → \(trackId.displayName)")
+            }
+            #endif
+            
+            currentProfile = TrackLibrary.loadTrackProfile(for: trackId)
+            lastTrackId = newTrackId
         }
-        #endif
-        
-        currentTrackProfile = TrackGeometryCache.shared.geometry(for: trackId)
-        lastTrackId = newTrackId
     }
+    
     
     private var carMarkers: [CarMarker] {
         var markers: [CarMarker] = []
@@ -123,7 +126,7 @@ struct TrackOverviewTile: View {
                 // Track map - expands to fill available space
                 GeometryReader { geometry in
                     TrackMapView(
-                        trackGeometry: currentTrackProfile.geometry,
+                        trackGeometry: trackProfileStore.currentProfile.geometry,
                         carMarkers: carMarkers,
                         canvasSize: CGSize(
                             width: geometry.size.width,
@@ -169,10 +172,10 @@ struct TrackOverviewTile: View {
                 .stroke(Color(hex: "#EFEFEF"), lineWidth: 1)
         )
         .onAppear {
-            updateTrackProfileIfNeeded()
+            trackProfileStore.updateIfNeeded(for: telemetryViewModel.trackId)
         }
-        .onChange(of: telemetryViewModel.trackId) { _ in
-            updateTrackProfileIfNeeded()
+        .onChange(of: telemetryViewModel.trackId) { newTrackId in
+            trackProfileStore.updateIfNeeded(for: newTrackId)
         }
     }
     

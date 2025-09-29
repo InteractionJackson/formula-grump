@@ -27,6 +27,8 @@
 		E1A1B1DB2C8F505000123456 /* TrackOverviewTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1DC2C8F505000123456 /* TrackOverviewTile.swift */; };
 		E1A1B1DD2C8F506000123456 /* TrackProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1DE2C8F506000123456 /* TrackProjector.swift */; };
 		E1A1B1E12C8F508000123456 /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1E22C8F508000123456 /* LeaderboardView.swift */; };
+		E1A1B1E32C8F509000123456 /* SVGPathParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1E42C8F509000123456 /* SVGPathParser.swift */; };
+		E1A1B1E52C8F50A000123456 /* PolylineGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1E62C8F50A000123456 /* PolylineGeometry.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -51,6 +53,8 @@
 		E1A1B1DC2C8F505000123456 /* TrackOverviewTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackOverviewTile.swift; sourceTree = "<group>"; };
 		E1A1B1DE2C8F506000123456 /* TrackProjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackProjector.swift; sourceTree = "<group>"; };
 		E1A1B1E22C8F508000123456 /* LeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardView.swift; sourceTree = "<group>"; };
+		E1A1B1E42C8F509000123456 /* SVGPathParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGPathParser.swift; sourceTree = "<group>"; };
+		E1A1B1E62C8F50A000123456 /* PolylineGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolylineGeometry.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -143,6 +147,8 @@
 				E1A1B1DA2C8F504000123456 /* TrackOverviewStyle.swift */,
 				E1A1B1DC2C8F505000123456 /* TrackOverviewTile.swift */,
 				E1A1B1DE2C8F506000123456 /* TrackProjector.swift */,
+				E1A1B1E42C8F509000123456 /* SVGPathParser.swift */,
+				E1A1B1E62C8F50A000123456 /* PolylineGeometry.swift */,
 			);
 			path = TrackOverview;
 			sourceTree = "<group>";
@@ -243,6 +249,8 @@
 				E1A1B1DB2C8F505000123456 /* TrackOverviewTile.swift in Sources */,
 				E1A1B1DD2C8F506000123456 /* TrackProjector.swift in Sources */,
 				E1A1B1E12C8F508000123456 /* LeaderboardView.swift in Sources */,
+				E1A1B1E32C8F509000123456 /* SVGPathParser.swift in Sources */,
+				E1A1B1E52C8F50A000123456 /* PolylineGeometry.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

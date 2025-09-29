@@ -80,144 +80,28 @@ enum TrackId: Int8, CaseIterable {
 }
 
 // MARK: - Track Profile
-struct TrackProfile {
+struct TrackProfile: Equatable {
     let id: TrackId
-    let geometry: TrackGeometry
+    let geometry: TrackGeometryImpl
     let displayName: String
     
-    init(id: TrackId, geometry: TrackGeometry) {
+    init(id: TrackId, geometry: TrackGeometryImpl) {
         self.id = id
         self.geometry = geometry
         self.displayName = id.displayName
+    }
+    
+    static func == (lhs: TrackProfile, rhs: TrackProfile) -> Bool {
+        return lhs.id == rhs.id && lhs.geometry == rhs.geometry
     }
 }
 
 // MARK: - Track Library
 class TrackLibrary {
-    private static let trackProfiles: [TrackId: TrackProfile] = {
-        var profiles: [TrackId: TrackProfile] = [:]
-        
-        // Load all SVG track geometries
-        profiles = loadAllSVGTracks()
-        
-        return profiles
-    }()
-    
-    // MARK: - SVG Track Loading
-    private static func loadAllSVGTracks() -> [TrackId: TrackProfile] {
-        var profiles: [TrackId: TrackProfile] = [:]
-        
-        // Mapping of SVG filenames to TrackId enum cases
-        let trackMappings: [(filename: String, trackId: TrackId)] = [
-            ("Albert Park.svg", .melbourne),
-            ("Bahrain.svg", .bahrain),
-            ("Baku City.svg", .azerbaijan),
-            ("Barcelona-Catalunya.svg", .spain),
-            ("Circuit of the Americas.svg", .usa),
-            ("Gilles Villeneuve.svg", .canada),
-            ("Hungaroring.svg", .hungary),
-            ("Imola.svg", .imola),
-            ("Interlagos.svg", .brazil),
-            ("Jeddah Corniche.svg", .jeddah),
-            ("Jeddah.svg", .saudi),
-            ("Las Vegas.svg", .lasVegas),
-            ("Lusail.svg", .qatar),
-            ("Marina Bay.svg", .singapore),
-            ("Mexico.svg", .mexico),
-            ("Miami.svg", .miami),
-            ("Monaco.svg", .monaco),
-            ("Monza.svg", .italy),
-            ("Red Bull Ring.svg", .austria),
-            ("Shanghai.svg", .china),
-            ("Silverstone.svg", .britain),
-            ("Spa-Francorchamps.svg", .belgium),
-            ("Suzuka.svg", .japan),
-            ("Yas Marina.svg", .abuDhabi),
-            ("Zandvoort.svg", .unknown) // No enum case for Zandvoort, using unknown
-        ]
-        
-        // Load each track's SVG data
-        for (filename, trackId) in trackMappings {
-            if let svgPath = loadSVGPathData(filename: filename) {
-                profiles[trackId] = TrackProfile(
-                    id: trackId,
-                    geometry: SVGTrackGeometry(
-                        svgPathData: svgPath,
-                        coordinateScale: 1.0,  // Will be adjusted per track as needed
-                        coordinateOffset: CGPoint.zero  // Will be adjusted per track as needed
-                    )
-                )
-                print("✅ Loaded SVG track: \(trackId.displayName)")
-            } else {
-                print("⚠️ Failed to load SVG for: \(trackId.displayName) (\(filename))")
-            }
-        }
-        
-        // Add fallback for unknown tracks
-        profiles[.unknown] = TrackProfile(
-            id: .unknown,
-            geometry: PolylineTrackGeometry(points: [
-                CGPoint(x: 150, y: 100),  // Start
-                CGPoint(x: 250, y: 100),  // Turn 1
-                CGPoint(x: 300, y: 150),  // Turn 2
-                CGPoint(x: 250, y: 200),  // Turn 3
-                CGPoint(x: 150, y: 200),  // Turn 4
-                CGPoint(x: 100, y: 150),  // Turn 5
-                CGPoint(x: 150, y: 100)   // Back to start
-            ])
-        )
-        
-        return profiles
-    }
-    
-    private static func loadSVGPathData(filename: String) -> String? {
-        // Construct the path to the SVG file
-        let svgPath = "/Users/mattjackson/Documents/GitHub/formula-grump/F1TelemetryTracker/Assets.xcassets/track outlines/\(filename)"
-        
-        do {
-            let svgContent = try String(contentsOfFile: svgPath, encoding: .utf8)
-            
-            // Extract the path data from the SVG
-            if let pathData = extractPathDataFromSVG(svgContent) {
-                return pathData
-            } else {
-                print("⚠️ Could not extract path data from \(filename)")
-                return nil
-            }
-        } catch {
-            print("⚠️ Error reading SVG file \(filename): \(error)")
-            return nil
-        }
-    }
-    
-    private static func extractPathDataFromSVG(_ svgContent: String) -> String? {
-        // Use regex to find the path data
-        let pattern = #"<path[^>]*d="([^"]*)"[^>]*>"#
-        
-        do {
-            let regex = try NSRegularExpression(pattern: pattern, options: [])
-            let range = NSRange(location: 0, length: svgContent.utf16.count)
-            
-            if let match = regex.firstMatch(in: svgContent, options: [], range: range) {
-                let pathDataRange = match.range(at: 1)
-                if let swiftRange = Range(pathDataRange, in: svgContent) {
-                    return String(svgContent[swiftRange])
-                }
-            }
-        } catch {
-            print("⚠️ Regex error: \(error)")
-        }
-        
-        return nil
-    }
     
     static func loadTrackProfile(for id: TrackId) -> TrackProfile {
-        if let profile = trackProfiles[id] {
-            return profile
-        } else {
-            print("⚠️ Track profile not found for ID \(id.rawValue), using generic oval")
-            return trackProfiles[.unknown]!
-        }
+        let geometry = TrackGeometryCache.shared.geometry(for: id)
+        return TrackProfile(id: id, geometry: TrackGeometryImpl(geometry: geometry))
     }
     
     static func loadTrackProfile(for rawId: Int8) -> TrackProfile {
