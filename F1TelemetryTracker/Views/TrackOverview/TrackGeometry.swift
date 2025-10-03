@@ -1,34 +1,26 @@
 import CoreGraphics
 import Foundation
 
-private struct TrackGeometryValidator {
-    static func assertValid(points: [CGPoint]) {
+struct TrackGeometryValidator {
+    static func normalize(points: [CGPoint]) -> [CGPoint] {
+        guard points.count >= 2 else { return points }
+        var normalized = points
+        if let first = points.first, let last = points.last, first != last {
+            normalized.append(first)
+        }
+        let xs = normalized.map { $0.x }
+        let ys = normalized.map { $0.y }
+        guard let minX = xs.min(), let minY = ys.min() else { return normalized }
+        let translated = normalized.map { CGPoint(x: $0.x - minX, y: $0.y - minY) }
+        let maxY = translated.map { $0.y }.max() ?? 0
+        return translated.map { CGPoint(x: $0.x, y: maxY - $0.y) }
+    }
+
+    static func assertClosed(points: [CGPoint]) {
         assert(points.count >= 2, "Track geometry must contain at least two points")
         if points.count > 2 {
             assert(points.first == points.last, "Track geometry should be closed (first == last point)")
         }
-    }
-    
-    static func normalize(points: [CGPoint]) -> [CGPoint] {
-        guard points.count >= 2 else { return points }
-        
-        var closedPoints = points
-        if let first = points.first, let last = points.last, first != last {
-            closedPoints.append(first)
-        }
-        
-        let xs = closedPoints.map { $0.x }
-        let ys = closedPoints.map { $0.y }
-        guard let minX = xs.min(), let minY = ys.min() else { return points }
-        
-        // Translate so minimum starts at (0,0)
-        let translated = closedPoints.map { CGPoint(x: $0.x - minX, y: $0.y - minY) }
-        
-        // Flip Y axis to match SwiftUI Canvas orientation (origin at top-left)
-        let maxY = translated.map { $0.y }.max() ?? 0
-        let normalized = translated.map { CGPoint(x: $0.x, y: maxY - $0.y) }
-        assertValid(points: normalized)
-        return normalized
     }
 }
 
@@ -50,7 +42,7 @@ struct TrackGeometryImpl: TrackGeometry, Equatable {
     
     init(geometry: PolylineGeometry) {
         self.polyline = geometry
-        TrackGeometryValidator.assertValid(points: geometry.points)
+        TrackGeometryValidator.assertClosed(points: geometry.points)
         self.cachedPath = geometry.createPath()
     }
     
@@ -79,7 +71,7 @@ class PolylineTrackGeometry: TrackGeometry {
     init(points: [CGPoint]) {
         self.polyline = PolylineGeometry(points: points)
         self.points = polyline.points
-        TrackGeometryValidator.assertValid(points: polyline.points)
+        TrackGeometryValidator.assertClosed(points: polyline.points)
         self.cachedPath = polyline.createPath()
     }
     
@@ -104,13 +96,13 @@ class SVGTrackGeometry: TrackGeometry {
         // Parse SVG data and normalize into a polyline so SwiftUI coordinates behave as expected
         let parsedPath = SVGTrackGeometry.parseSVGPath(svgPathData, scale: coordinateScale, offset: coordinateOffset)
         self.polyline = PolylineGeometry.fromPath(parsedPath.path)
-        TrackGeometryValidator.assertValid(points: polyline.points)
+        TrackGeometryValidator.assertClosed(points: polyline.points)
         self.cachedPath = polyline.createPath()
     }
     
     init(cgPath: CGPath) {
         self.polyline = PolylineGeometry.fromPath(cgPath)
-        TrackGeometryValidator.assertValid(points: polyline.points)
+        TrackGeometryValidator.assertClosed(points: polyline.points)
         self.cachedPath = polyline.createPath()
     }
     

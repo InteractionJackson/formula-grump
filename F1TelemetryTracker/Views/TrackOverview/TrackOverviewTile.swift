@@ -174,7 +174,7 @@ struct TrackOverviewTile: View {
         .onAppear {
             trackProfileStore.updateIfNeeded(for: telemetryViewModel.trackId)
         }
-        .onChange(of: telemetryViewModel.trackId) { newTrackId in
+        .onChange(of: telemetryViewModel.trackId) { _, newTrackId in
             trackProfileStore.updateIfNeeded(for: newTrackId)
         }
     }

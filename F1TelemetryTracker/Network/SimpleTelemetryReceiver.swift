@@ -222,7 +222,7 @@ class SimpleTelemetryReceiver: ObservableObject {
             return
         }
         
-        let gameYear = data[pos]; pos += 1                                  // Byte 2
+        _ = data[pos]; pos += 1                                  // Byte 2
         let gameMajorVersion = data[pos]; pos += 1                          // Byte 3  
         let gameMinorVersion = data[pos]; pos += 1                          // Byte 4
         let packetVersion = data[pos]; pos += 1                             // Byte 5
@@ -250,9 +250,9 @@ class SimpleTelemetryReceiver: ObservableObject {
         let sessionUID = readUInt64(from: data, at: pos); pos += 8          // Bytes 7-14
         let sessionTime = readFloat(from: data, at: pos); pos += 4          // Bytes 15-18
         let frameIdentifier = readUInt32(from: data, at: pos); pos += 4     // Bytes 19-22
-        let overallFrameIdentifier = readUInt32(from: data, at: pos); pos += 4  // Bytes 23-26
+        _ = readUInt32(from: data, at: pos); pos += 4  // Bytes 23-26
         let playerCarIndex = data[pos]; pos += 1                            // Byte 27
-        let secondaryPlayerCarIndex = data[pos]; pos += 1                   // Byte 28
+        _ = data[pos]; pos += 1                   // Byte 28
         
         print("📦 F1 24 Packet: Type=\(packetId), Size=\(data.count), Player=\(playerCarIndex)")
         print("   Session: \(sessionUID), Time: \(String(format: "%.3f", sessionTime))s, Frame: \(frameIdentifier)")
@@ -518,16 +518,18 @@ class SimpleTelemetryReceiver: ObservableObject {
         let actualTyreCompound = data[pos]; pos += 1       // 25: UInt8
         let visualTyreCompound = data[pos]; pos += 1       // 26: UInt8
         let tyresAgeLaps = data[pos]; pos += 1             // 27: UInt8
-        
-        print("🔍 TYRE DEBUG: Actual=\(actualTyreCompound), Visual=\(visualTyreCompound), Age=\(tyresAgeLaps)")
-        print("🔍 TYRE INTERPRETATION: Actual=\(tyreCompoundName(actualTyreCompound)), Visual=\(tyreCompoundName(visualTyreCompound))")
         let vehicleFiaFlags = Int8(bitPattern: data[pos]); pos += 1 // 28: Int8
         let enginePowerICE = readFloat(from: data, at: pos); pos += 4 // 29-32: Float
         let enginePowerMGUK = readFloat(from: data, at: pos); pos += 4 // 33-36: Float
         let ersStoreEnergy = readFloat(from: data, at: pos); pos += 4  // 37-40: Float ⭐ THIS IS THE ERS DATA
+        let ersDeployMode = data[pos]; pos += 1
+        let ersHarvestedThisLapMGUK = readFloat(from: data, at: pos); pos += 4
+        let ersHarvestedThisLapMGUH = readFloat(from: data, at: pos); pos += 4
+        let ersDeployedThisLap = readFloat(from: data, at: pos); pos += 4
+        let networkPaused = data[pos]; pos += 1
         
-        print("🔋 ERS ENERGY PARSED: \(Int(ersStoreEnergy / 1000)) kJ (Raw: \(ersStoreEnergy) J)")
-        print("🏎️ TYRE DATA PARSED: Compound=\(actualTyreCompound), Age=\(tyresAgeLaps) laps")
+        print("🔍 TYRE DEBUG: Actual=\(actualTyreCompound), Visual=\(visualTyreCompound), Age=\(tyresAgeLaps)")
+        print("🔍 TYRE INTERPRETATION: Actual=\(tyreCompoundName(actualTyreCompound)), Visual=\(tyreCompoundName(visualTyreCompound))")
         print("🔍 DEBUG: Car Status offset=\(carStatusOffset), Final pos=\(pos), packet size=\(data.count)")
         print("🔍 VALIDATION: DRS=\(drsAllowed), MaxRPM=\(maxRPM), Fuel=\(fuelInTank)L")
         print("🔍 PLAYER INDEX: Using player index \(playerIndex) from header")
@@ -536,7 +538,7 @@ class SimpleTelemetryReceiver: ObservableObject {
         if playerIndex != 0 {
             let car0Offset = headerSize + (0 * carStatusSize)
             if car0Offset + 40 <= data.count {
-                var car0Pos = car0Offset + 37  // Skip to ERS position
+                let car0Pos = car0Offset + 37  // Skip to ERS position
                 let car0ERS = readFloat(from: data, at: car0Pos)
                 print("🔍 Car 0 ERS comparison: \(car0ERS) J")
             }
@@ -550,31 +552,31 @@ class SimpleTelemetryReceiver: ObservableObject {
         
         // Create a CarStatusData with the parsed ERS energy and tyre data
         let statusData = CarStatusData(
-            tractionControl: 0,
-            antiLockBrakes: 0,
-            fuelMix: 0,
-            frontBrakeBias: 0,
-            pitLimiterStatus: 0,
-            fuelInTank: 0.0,
-            fuelCapacity: 0.0,
-            fuelRemainingLaps: 0.0,
-            maxRPM: 0,
-            idleRPM: 0,
-            maxGears: 0,
-            drsAllowed: 0,
-            drsActivationDistance: 0,
+            tractionControl: tractionControl,
+            antiLockBrakes: antiLockBrakes,
+            fuelMix: fuelMix,
+            frontBrakeBias: frontBrakeBias,
+            pitLimiterStatus: pitLimiterStatus,
+            fuelInTank: fuelInTank,
+            fuelCapacity: fuelCapacity,
+            fuelRemainingLaps: fuelRemainingLaps,
+            maxRPM: maxRPM,
+            idleRPM: idleRPM,
+            maxGears: maxGears,
+            drsAllowed: drsAllowed,
+            drsActivationDistance: drsActivationDistance,
             actualTyreCompound: actualTyreCompound,
             visualTyreCompound: visualTyreCompound,
             tyresAgeLaps: tyresAgeLaps,
-            vehicleFiaFlags: 0,
-            enginePowerICE: 0.0,
-            enginePowerMGUK: 0.0,
+            vehicleFiaFlags: vehicleFiaFlags,
+            enginePowerICE: enginePowerICE,
+            enginePowerMGUK: enginePowerMGUK,
             ersStoreEnergy: ersStoreEnergy,
-            ersDeployMode: 0,
-            ersHarvestedThisLapMGUK: 0.0,
-            ersHarvestedThisLapMGUH: 0.0,
-            ersDeployedThisLap: 0.0,
-            networkPaused: 0
+            ersDeployMode: ersDeployMode,
+            ersHarvestedThisLapMGUK: ersHarvestedThisLapMGUK,
+            ersHarvestedThisLapMGUH: ersHarvestedThisLapMGUH,
+            ersDeployedThisLap: ersDeployedThisLap,
+            networkPaused: networkPaused
         )
         
         DispatchQueue.main.async {
@@ -866,9 +868,9 @@ class SimpleTelemetryReceiver: ObservableObject {
                     packetVersion: 1, packetId: 1, sessionUID: 0, sessionTime: 0.0,
                     frameIdentifier: 0, overallFrameIdentifier: 0, playerCarIndex: 0, secondaryPlayerCarIndex: 255
                 ),
-                weather: weather, trackTemperature: trackTemperature, airTemperature: trackTemperature,
-                totalLaps: totalLaps, trackLength: 0, sessionType: 0, trackId: trackId, formula: 0,
-                sessionTimeLeft: 0, sessionDuration: 0, pitSpeedLimit: 0, gamePaused: 0, isSpectating: 0,
+                weather: weather, trackTemperature: trackTemperature, airTemperature: airTemperature,
+                totalLaps: totalLaps, trackLength: trackLength, sessionType: sessionType, trackId: trackId, formula: formula,
+                sessionTimeLeft: sessionTimeLeft, sessionDuration: sessionDuration, pitSpeedLimit: 0, gamePaused: 0, isSpectating: 0,
                 spectatorCarIndex: 0, sliProNativeSupport: 0, numMarshalZones: 0, marshalZones: [],
                 safetyCarStatus: safetyCarStatus, networkGame: 0, numWeatherForecastSamples: 0,
                 weatherForecastSamples: [], forecastAccuracy: 0, aiDifficulty: 0, seasonLinkIdentifier: 0,
@@ -920,18 +922,17 @@ class SimpleTelemetryReceiver: ObservableObject {
             var pPos = participantOffset
             let aiControlled = data[pPos]; pPos += 1        // Byte 0
             let driverId = data[pPos]; pPos += 1            // Byte 1
-            let networkId = data[pPos]; pPos += 1           // Byte 2
-            let teamId = data[pPos]; pPos += 1              // Byte 3
-            let myTeam = data[pPos]; pPos += 1              // Byte 4
-            let raceNumber = data[pPos]; pPos += 1          // Byte 5
-            let nationality = data[pPos]; pPos += 1         // Byte 6
+            _ = data[pPos]; pPos += 1           // Byte 2
+            _ = data[pPos]; pPos += 1              // Byte 3
+            _ = data[pPos]; pPos += 1          // Byte 5
+            _ = data[pPos]; pPos += 1         // Byte 6
             
             // Name is at bytes 7-54 (48 bytes, null-terminated UTF-8)
             let nameData = data.subdata(in: pPos..<(pPos + 48))
             let name = parseParticipantName(from: nameData)
             pPos += 48
             
-            let yourTelemetry = data[pPos]; pPos += 1       // Byte 55
+            _ = data[pPos]; pPos += 1       // Byte 55
             
             names[i] = name
             // Treat driverId==255 as network human; otherwise rely on aiControlled
