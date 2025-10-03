@@ -100,6 +100,7 @@ class TelemetryViewModel: ObservableObject {
     private var currentTrackIdForAlignment: Int8 = -1
     private var worldSampleCount = 0
     private let minSamplesForAlignment = 100
+    private var cachedTrackProjector: (trackId: Int8, projector: TrackProjector)? // Cache projector per track to avoid rebuilding every sample
     
     private var telemetryReceiver: SimpleTelemetryReceiver
     private var cancellables = Set<AnyCancellable>()
@@ -579,24 +580,32 @@ class TelemetryViewModel: ObservableObject {
     }
     
     private func calculateTrackProgress(from worldPosition: CGPoint) -> Float {
-        // Get current track geometry
-        let trackId = TrackId(rawValue: self.trackId) ?? .unknown
-        let trackGeometry = TrackGeometryCache.shared.geometry(for: trackId)
+        guard let projector = trackProjector(for: self.trackId) else { return 0.0 }
         
-        // Project world position onto track geometry
-        return projectWorldPositionToTrack(worldPosition: worldPosition, trackGeometry: trackGeometry)
+        // Project world position using cached projector for current track
+        return projectWorldPositionToTrack(worldPosition: worldPosition, projector: projector)
     }
     
-    private func projectWorldPositionToTrack(worldPosition: CGPoint, trackGeometry: PolylineGeometry) -> Float {
+    private func projectWorldPositionToTrack(worldPosition: CGPoint, projector: TrackProjector) -> Float {
         // Transform world coordinates to track-relative coordinates
         let transformedPosition = transformWorldToTrackCoordinates(worldPosition: worldPosition)
         
-        // Use TrackProjector for robust projection with coarse sampling + refinement
-        let trackGeometryImpl = TrackGeometryImpl(geometry: trackGeometry)
-        let projector = TrackProjector(trackGeometry: trackGeometryImpl)
+        // Use cached TrackProjector for robust projection with coarse sampling + refinement
         let progress = projector.projectGeometryPointToProgress(transformedPosition)
         
         return Float(progress)
+    }
+
+    private func trackProjector(for trackId: Int8) -> TrackProjector? {
+        if let cached = cachedTrackProjector, cached.trackId == trackId {
+            return cached.projector
+        }
+        
+        let resolvedTrackId = TrackId(rawValue: trackId) ?? .unknown
+        let geometry = TrackGeometryCache.shared.geometry(for: resolvedTrackId)
+        let projector = TrackProjector(trackGeometry: TrackGeometryImpl(geometry: geometry))
+        cachedTrackProjector = (trackId, projector) // Cached on main thread via Combine updates
+        return projector
     }
     
     private func transformWorldToTrackCoordinates(worldPosition: CGPoint) -> CGPoint {
@@ -639,6 +648,7 @@ class TelemetryViewModel: ObservableObject {
         alignmentIsSolved = false
         worldToGeom = .identity
         worldSampleCount = 0
+        cachedTrackProjector = nil // Track changed/realigned, rebuild projector on next use
         
         #if DEBUG
         print("🔄 COORDINATE ALIGNMENT RESET for track \(trackId)")

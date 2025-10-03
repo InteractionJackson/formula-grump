@@ -1,173 +1,125 @@
 import CoreGraphics
 import Foundation
 
+private struct TrackGeometryValidator {
+    static func assertValid(points: [CGPoint]) {
+        assert(points.count >= 2, "Track geometry must contain at least two points")
+        if points.count > 2 {
+            assert(points.first == points.last, "Track geometry should be closed (first == last point)")
+        }
+    }
+    
+    static func normalize(points: [CGPoint]) -> [CGPoint] {
+        guard points.count >= 2 else { return points }
+        
+        var closedPoints = points
+        if let first = points.first, let last = points.last, first != last {
+            closedPoints.append(first)
+        }
+        
+        let xs = closedPoints.map { $0.x }
+        let ys = closedPoints.map { $0.y }
+        guard let minX = xs.min(), let minY = ys.min() else { return points }
+        
+        // Translate so minimum starts at (0,0)
+        let translated = closedPoints.map { CGPoint(x: $0.x - minX, y: $0.y - minY) }
+        
+        // Flip Y axis to match SwiftUI Canvas orientation (origin at top-left)
+        let maxY = translated.map { $0.y }.max() ?? 0
+        let normalized = translated.map { CGPoint(x: $0.x, y: maxY - $0.y) }
+        assertValid(points: normalized)
+        return normalized
+    }
+}
+
 // MARK: - Track Geometry Protocol
 protocol TrackGeometry {
     var path: CGPath { get }
     func point(at progress: CGFloat) -> CGPoint
     var bounds: CGRect { get }
+    func closestProgress(to point: CGPoint) -> CGFloat
 }
 
 // MARK: - Track Geometry Implementation
 struct TrackGeometryImpl: TrackGeometry, Equatable {
-    private let geometry: PolylineGeometry
+    private let polyline: PolylineGeometry
+    private let cachedPath: CGPath
     
-    var path: CGPath { geometry.createPath() }
-    var bounds: CGRect { geometry.bounds }
+    var path: CGPath { cachedPath }
+    var bounds: CGRect { polyline.bounds }
     
     init(geometry: PolylineGeometry) {
-        self.geometry = geometry
+        self.polyline = geometry
+        TrackGeometryValidator.assertValid(points: geometry.points)
+        self.cachedPath = geometry.createPath()
     }
     
     func point(at progress: CGFloat) -> CGPoint {
-        return geometry.point(at: progress)
+        return polyline.point(at: progress)
+    }
+    
+    func closestProgress(to point: CGPoint) -> CGFloat {
+        return polyline.progressForClosestPoint(to: point)
     }
     
     static func == (lhs: TrackGeometryImpl, rhs: TrackGeometryImpl) -> Bool {
-        return lhs.geometry == rhs.geometry
+        return lhs.polyline == rhs.polyline
     }
 }
 
 // MARK: - Polyline Track Geometry Implementation
 class PolylineTrackGeometry: TrackGeometry {
-    let points: [CGPoint]  // Made accessible for track projection
-    private let lengthTable: [CGFloat]
-    private let totalLength: CGFloat
-    private let _path: CGPath
-    private let _bounds: CGRect
+    let points: [CGPoint]  // Exposed for debugging & previews
+    private let polyline: PolylineGeometry
+    private let cachedPath: CGPath
     
-    var path: CGPath { _path }
-    var bounds: CGRect { _bounds }
+    var path: CGPath { cachedPath }
+    var bounds: CGRect { polyline.bounds }
     
     init(points: [CGPoint]) {
-        self.points = points
-        
-        // Build cumulative length table for parameterization
-        var lengths: [CGFloat] = [0]
-        var totalLen: CGFloat = 0
-        
-        for i in 1..<points.count {
-            let distance = points[i-1].distance(to: points[i])
-            totalLen += distance
-            lengths.append(totalLen)
-        }
-        
-        self.lengthTable = lengths
-        self.totalLength = totalLen
-        
-        // Create CGPath
-        let path = CGMutablePath()
-        if !points.isEmpty {
-            path.move(to: points[0])
-            for i in 1..<points.count {
-                path.addLine(to: points[i])
-            }
-            // Close the path for racing circuits
-            if points.count > 2 {
-                path.addLine(to: points[0])
-            }
-        }
-        self._path = path
-        
-        // Calculate bounds
-        if points.isEmpty {
-            self._bounds = .zero
-        } else {
-            let xs = points.map { $0.x }
-            let ys = points.map { $0.y }
-            let minX = xs.min() ?? 0
-            let maxX = xs.max() ?? 0
-            let minY = ys.min() ?? 0
-            let maxY = ys.max() ?? 0
-            self._bounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-        }
+        self.polyline = PolylineGeometry(points: points)
+        self.points = polyline.points
+        TrackGeometryValidator.assertValid(points: polyline.points)
+        self.cachedPath = polyline.createPath()
     }
     
     func point(at progress: CGFloat) -> CGPoint {
-        guard !points.isEmpty else { return .zero }
-        guard points.count > 1 else { return points[0] }
-        
-        let clampedProgress = max(0, min(1, progress))
-        let targetLength = clampedProgress * totalLength
-        
-        // Find the segment containing this length
-        var segmentIndex = 0
-        for i in 1..<lengthTable.count {
-            if lengthTable[i] >= targetLength {
-                segmentIndex = i - 1
-                break
-            }
-        }
-        
-        // Handle edge case where we're at the very end
-        if segmentIndex >= points.count - 1 {
-            return points.last ?? .zero
-        }
-        
-        // Interpolate within the segment
-        let segmentStart = lengthTable[segmentIndex]
-        let segmentEnd = lengthTable[segmentIndex + 1]
-        let segmentLength = segmentEnd - segmentStart
-        
-        if segmentLength == 0 {
-            return points[segmentIndex]
-        }
-        
-        let segmentProgress = (targetLength - segmentStart) / segmentLength
-        let startPoint = points[segmentIndex]
-        let endPoint = points[segmentIndex + 1]
-        
-        return CGPoint(
-            x: startPoint.x + (endPoint.x - startPoint.x) * segmentProgress,
-            y: startPoint.y + (endPoint.y - startPoint.y) * segmentProgress
-        )
+        return polyline.point(at: progress)
+    }
+    
+    func closestProgress(to point: CGPoint) -> CGFloat {
+        return polyline.progressForClosestPoint(to: point)
     }
 }
 
 // MARK: - SVG Track Geometry Implementation
 class SVGTrackGeometry: TrackGeometry {
-    private let _path: CGPath
-    private let _bounds: CGRect
-    private let pathPoints: [CGPoint]  // Sampled points for progress calculation
+    private let polyline: PolylineGeometry
+    private let cachedPath: CGPath
     
-    var path: CGPath { _path }
-    var bounds: CGRect { _bounds }
+    var path: CGPath { cachedPath }
+    var bounds: CGRect { polyline.bounds }
     
     init(svgPathData: String, coordinateScale: CGFloat = 1.0, coordinateOffset: CGPoint = .zero) {
-        // Parse SVG path data and create CGPath
+        // Parse SVG data and normalize into a polyline so SwiftUI coordinates behave as expected
         let parsedPath = SVGTrackGeometry.parseSVGPath(svgPathData, scale: coordinateScale, offset: coordinateOffset)
-        self._path = parsedPath.path
-        self._bounds = parsedPath.bounds
-        
-        // Sample the path to create points for progress calculation
-        self.pathPoints = SVGTrackGeometry.samplePath(parsedPath.path, sampleCount: 500)
+        self.polyline = PolylineGeometry.fromPath(parsedPath.path)
+        TrackGeometryValidator.assertValid(points: polyline.points)
+        self.cachedPath = polyline.createPath()
     }
     
     init(cgPath: CGPath) {
-        self._path = cgPath
-        self._bounds = cgPath.boundingBox
-        self.pathPoints = SVGTrackGeometry.samplePath(cgPath, sampleCount: 500)
+        self.polyline = PolylineGeometry.fromPath(cgPath)
+        TrackGeometryValidator.assertValid(points: polyline.points)
+        self.cachedPath = polyline.createPath()
     }
     
     func point(at progress: CGFloat) -> CGPoint {
-        guard !pathPoints.isEmpty else { return .zero }
-        
-        let clampedProgress = max(0, min(1, progress))
-        let index = Int(clampedProgress * CGFloat(pathPoints.count - 1))
-        
-        if index >= pathPoints.count - 1 {
-            return pathPoints.last ?? .zero
-        }
-        
-        // Interpolate between points for smoother positioning
-        let startPoint = pathPoints[index]
-        let endPoint = pathPoints[index + 1]
-        let segmentProgress = (clampedProgress * CGFloat(pathPoints.count - 1)) - CGFloat(index)
-        
-        return CGPoint(
-            x: startPoint.x + (endPoint.x - startPoint.x) * segmentProgress,
-            y: startPoint.y + (endPoint.y - startPoint.y) * segmentProgress
-        )
+        return polyline.point(at: progress)
+    }
+    
+    func closestProgress(to point: CGPoint) -> CGFloat {
+        return polyline.progressForClosestPoint(to: point)
     }
     
     // MARK: - SVG Path Parsing

@@ -18,14 +18,15 @@ final class PolylineGeometry: Equatable {
     var bounds: CGRect { _bounds }
     
     init(points: [CGPoint]) {
-        self.points = points
+        let normalized = TrackGeometryValidator.normalize(points: points)
+        self.points = normalized
         
         // Build cumulative arc-length table for monotonic parameterization
         var lengths: [CGFloat] = [0]
         var totalLen: CGFloat = 0
         
-        for i in 1..<points.count {
-            let distance = points[i-1].distance(to: points[i])
+        for i in 1..<normalized.count {
+            let distance = normalized[i-1].distance(to: normalized[i])
             totalLen += distance
             lengths.append(totalLen)
         }
@@ -34,11 +35,11 @@ final class PolylineGeometry: Equatable {
         self.totalLength = totalLen
         
         // Calculate bounds
-        if points.isEmpty {
+        if normalized.isEmpty {
             self._bounds = .zero
         } else {
-            let xs = points.map { $0.x }
-            let ys = points.map { $0.y }
+            let xs = normalized.map { $0.x }
+            let ys = normalized.map { $0.y }
             let minX = xs.min() ?? 0
             let maxX = xs.max() ?? 0
             let minY = ys.min() ?? 0

@@ -512,7 +512,6 @@ struct SVGPathParser {
         
         // For simplicity, return a single cubic Bezier approximation
         // In production, this should be split into multiple curves for accuracy
-        let midPoint = CGPoint(x: (start.x + end.x) / 2, y: (start.y + end.y) / 2)
         let cp1 = CGPoint(x: start.x + (cx - start.x) * 0.5, y: start.y + (cy - start.y) * 0.5)
         let cp2 = CGPoint(x: end.x + (cx - end.x) * 0.5, y: end.y + (cy - end.y) * 0.5)
         

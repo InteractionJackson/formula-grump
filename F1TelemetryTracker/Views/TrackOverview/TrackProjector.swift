@@ -28,24 +28,9 @@ class TrackProjector {
     
     /// Finds the closest point on the track path and returns the progress (0-1)
     private func findClosestProgressOnTrack(for worldPoint: CGPoint) -> CGFloat {
-        var closestProgress: CGFloat = 0
-        var minDistance: CGFloat = .greatestFiniteMagnitude
-        
-        // Sample the track at regular intervals to find the closest point
-        let sampleCount = 200
-        for i in 0...sampleCount {
-            let progress = CGFloat(i) / CGFloat(sampleCount)
-            let trackPoint = trackGeometry.point(at: progress)
-            let distance = worldPoint.distance(to: trackPoint)
-            
-            if distance < minDistance {
-                minDistance = distance
-                closestProgress = progress
-            }
-        }
-        
-        // Refine the result with a finer search around the closest point
-        return refineProgress(around: closestProgress, for: worldPoint)
+        // Use geometry-native closest search when available
+        let coarseProgress = trackGeometry.closestProgress(to: worldPoint)
+        return refineProgress(around: coarseProgress, for: worldPoint)
     }
     
     /// Projects a point in geometry space directly to track progress (0-1)
