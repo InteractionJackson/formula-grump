@@ -45,7 +45,8 @@ struct PacketHeader {
             // Unknown packet type - allow for future expansion
             return actualSize >= PacketSizes.header
         }
-        return actualSize == expectedSize
+        // Accept a small overage; some builds pad or tack on trailing bytes
+        return actualSize >= expectedSize && actualSize < expectedSize + 64
     }
 }
 

@@ -48,6 +48,12 @@ class TrackProjector {
         return refineProgress(around: closestProgress, for: worldPoint)
     }
     
+    /// Projects a point in geometry space directly to track progress (0-1)
+    /// This method assumes the point is already in the same coordinate system as the track geometry
+    func projectGeometryPointToProgress(_ geometryPoint: CGPoint) -> CGFloat {
+        return findClosestProgressOnTrack(for: geometryPoint)
+    }
+    
     /// Refines the progress calculation with a finer search
     private func refineProgress(around initialProgress: CGFloat, for worldPoint: CGPoint) -> CGFloat {
         let searchRange: CGFloat = 0.01 // 1% of track length

@@ -21,6 +21,7 @@ class SimpleTelemetryReceiver: ObservableObject {
     @Published var currentSessionData: PacketSessionData?
     @Published var allLapData: [LapData] = []
     @Published var participantNames: [String] = Array(repeating: "Unknown", count: 22)
+    @Published var isAI: [Bool] = Array(repeating: true, count: 22)
     @Published var currentCarDamage: CarDamageData?
     @Published var currentMotionData: [CarMotionData] = []
     @Published var isConnected: Bool = false
@@ -673,14 +674,13 @@ class SimpleTelemetryReceiver: ObservableObject {
         // Lap data starts after F1 24 header (29 bytes)
         let headerSize = PacketSizes.header  // F1 24 header is 29 bytes
         
-        // F1 24 LapData structure size calculation:
-        // From debug output: 1285 bytes total for lap data packets
-        // Calculate: (1285 - 29 header - 2 trailer) / 22 cars = 1254 / 22 = 57 bytes per car
-        let calculatedLapDataSize = (data.count - headerSize - 2) / 22
-        let lapDataSize = calculatedLapDataSize > 0 ? calculatedLapDataSize : 57
+        // F1 24 LapData structure: fixed 57 bytes per car (from F1 24 UDP spec)
+        let lapDataSize = 57  // Fixed size per F1 24 specification
+        let cars = 22
+        let trailing = data.count - (headerSize + cars * lapDataSize)
         
-        print("🔍 CALCULATED LAP DATA SIZE: \(calculatedLapDataSize) bytes per car (packet: \(data.count), header: \(headerSize))")
-        print("🔍 EXPECTED: For 1285-byte packets = \((1285 - 29 - 2) / 22) = 57 bytes per car")
+        print("🔍 FIXED LAP DATA SIZE: \(lapDataSize) bytes per car")
+        print("🔍 PACKET BREAKDOWN: total=\(data.count), header=\(headerSize), cars=\(cars*lapDataSize), trailing=\(trailing)")
         
         // Check session info from header if available
         if data.count >= 29 {
@@ -692,71 +692,52 @@ class SimpleTelemetryReceiver: ObservableObject {
         
         var allCarsLapData: [LapData] = []
         
-        // Parse lap data for ALL 22 cars
-        for carIndex in 0..<22 {
-            let lapDataOffset = headerSize + (carIndex * lapDataSize)
+        // Parse lap data for ALL 22 cars using fixed offsets
+        for carIndex in 0..<cars {
+            let base = headerSize + (carIndex * lapDataSize)
             
-            guard lapDataOffset + lapDataSize <= data.count else {
+            guard base + lapDataSize <= data.count else {
                 print("⚠️ Not enough data for lap data car \(carIndex)")
                 continue
             }
             
-            // Parse the essential lap timing data for this car
-            var pos = lapDataOffset
+            // Read fields at correct offsets RELATIVE TO base (F1 24 LapData structure)
+            let lastLapTimeInMS = readUInt32(from: data, at: base + 0)        // Bytes 0-3
+            let currentLapTimeInMS = readUInt32(from: data, at: base + 4)     // Bytes 4-7
+            let sector1TimeInMS = readUInt16(from: data, at: base + 8)        // Bytes 8-9
+            let sector1TimeMinutes = data[base + 10]                         // Byte 10
+            let sector2TimeInMS = readUInt16(from: data, at: base + 11)       // Bytes 11-12
+            let sector2TimeMinutes = data[base + 13]                         // Byte 13
+            let deltaToCarInFrontInMS = readUInt16(from: data, at: base + 14) // Bytes 14-15
+            let deltaToRaceLeaderInMS = readUInt16(from: data, at: base + 16) // Bytes 16-17
+            let lapDistance = readFloat(from: data, at: base + 18)           // Bytes 18-21
+            let totalDistance = readFloat(from: data, at: base + 22)         // Bytes 22-25
+            let safetyCarDelta = readFloat(from: data, at: base + 26)        // Bytes 26-29
+            let carPosition = data[base + 30]                               // Byte 30 - CRITICAL POSITION
             
-            let lastLapTimeInMS = readUInt32(from: data, at: pos); pos += 4
-            let currentLapTimeInMS = readUInt32(from: data, at: pos); pos += 4
-            let sector1TimeInMS = readUInt16(from: data, at: pos); pos += 2
-            let sector1TimeMinutes = data[pos]; pos += 1
-            let sector2TimeInMS = readUInt16(from: data, at: pos); pos += 2
-            let sector2TimeMinutes = data[pos]; pos += 1
-            let deltaToCarInFrontInMS = readUInt16(from: data, at: pos); pos += 2
-            let deltaToRaceLeaderInMS = readUInt16(from: data, at: pos); pos += 2
-            let lapDistance = readFloat(from: data, at: pos); pos += 4
-            let totalDistance = readFloat(from: data, at: pos); pos += 4
-            let safetyCarDelta = readFloat(from: data, at: pos); pos += 4
-            let carPosition = data[pos]; pos += 1
+            let currentLapNum = data[base + 31]                             // Byte 31
+            let pitStatus = data[base + 32]                             // Byte 32
+            let numPitStops = data[base + 33]                           // Byte 33
+            let sector = data[base + 34]                                // Byte 34
+            let currentLapInvalid = data[base + 35]                     // Byte 35
+            let penalties = data[base + 36]                             // Byte 36
+            let totalWarnings = data[base + 37]                         // Byte 37
+            let cornerCuttingWarnings = data[base + 38]                 // Byte 38
+            let numUnservedDriveThroughPens = data[base + 39]           // Byte 39
+            let numUnservedStopGoPens = data[base + 40]                 // Byte 40
+            let gridPosition = data[base + 41]                          // Byte 41
+            let driverStatus = data[base + 42]                             // Byte 42
+            let resultStatus = data[base + 43]                          // Byte 43
+            let pitLaneTimerActive = data[base + 44]                    // Byte 44
+            let pitLaneTimeInLaneInMS = readUInt16(from: data, at: base + 45) // Bytes 45-46
+            let pitStopTimerInMS = readUInt16(from: data, at: base + 47)      // Bytes 47-48
+            let pitStopShouldServePen = data[base + 49]                 // Byte 49
             
-            // Debug car position for first few cars with raw bytes
+            // Debug critical fields for first few cars
             if carIndex < 3 {
-                let startIdx = max(0, pos-10)
-                let endIdx = min(data.count, pos+10)
-                let rawBytes = Array(data[startIdx..<endIdx])
-                let hexBytes = rawBytes.map { String(format: "%02x", $0) }.joined(separator: " ")
-                print("🏁 Car \(carIndex): CarPos=\(carPosition), CurrentLap=\(data[pos]), Offset=\(pos-1)")
-                print("   Raw bytes [\(startIdx)-\(endIdx)]: \(hexBytes)")
-                print("   Position byte at offset \(pos-1): 0x\(String(format: "%02x", carPosition))")
+                print("🏁 Car \(carIndex): CarPos=\(carPosition), CurrentLap=\(currentLapNum), GridPos=\(gridPosition)")
+                print("   Base offset: \(base), Position at: \(base + 30)")
             }
-            let currentLapNum = data[pos]; pos += 1
-            let pitStatus = data[pos]; pos += 1
-            let numPitStops = data[pos]; pos += 1
-            let sector = data[pos]; pos += 1
-            let currentLapInvalid = data[pos]; pos += 1
-            let penalties = data[pos]; pos += 1
-            let totalWarnings = data[pos]; pos += 1
-            let cornerCuttingWarnings = data[pos]; pos += 1
-            let numUnservedDriveThroughPens = data[pos]; pos += 1
-            let numUnservedStopGoPens = data[pos]; pos += 1
-            let gridPosition = data[pos]; pos += 1
-            
-            // Debug grid position for first few cars
-            if carIndex < 3 {
-                print("   GridPos=\(gridPosition), Offset=\(pos-1)")
-                print("   Grid byte at offset \(pos-1): 0x\(String(format: "%02x", gridPosition))")
-                
-                // Show a few more bytes around gridPosition for context
-                let gridStartIdx = max(0, pos-5)
-                let gridEndIdx = min(data.count, pos+5)
-                let gridBytes = Array(data[gridStartIdx..<gridEndIdx])
-                let gridHex = gridBytes.map { String(format: "%02x", $0) }.joined(separator: " ")
-                print("   Grid context [\(gridStartIdx)-\(gridEndIdx)]: \(gridHex)")
-            }
-            let driverStatus = data[pos]; pos += 1
-            let resultStatus = data[pos]; pos += 1
-            let pitLaneTimerActive = data[pos]; pos += 1
-            let pitLaneTimeInLaneInMS = readUInt16(from: data, at: pos); pos += 2
-            let pitStopTimerInMS = readUInt16(from: data, at: pos); pos += 2
-            let pitStopShouldServePen = data[pos]; pos += 1
             
             // Create LapData struct for this car
             let lapData = LapData(
@@ -920,6 +901,7 @@ class SimpleTelemetryReceiver: ObservableObject {
         print("👥 Active cars: \(numActiveCars)")
         
         var names: [String] = Array(repeating: "Unknown", count: 22)
+        var aiFlags: [Bool] = Array(repeating: true, count: 22)
         
         // F1 24 ParticipantData is 56 bytes per participant
         let participantDataSize = PacketSizes.participantDataSize
@@ -952,13 +934,16 @@ class SimpleTelemetryReceiver: ObservableObject {
             let yourTelemetry = data[pPos]; pPos += 1       // Byte 55
             
             names[i] = name
+            // Treat driverId==255 as network human; otherwise rely on aiControlled
+            aiFlags[i] = (aiControlled == 1) || (driverId != 255 ? false : true)
             
-            print("👤 Car \(i): '\(name)' (AI: \(aiControlled == 1 ? "Yes" : "No"))")
+            print("👤 Car \(i): '\(name)' (AI: \(aiControlled == 1 ? "Yes" : "No"), DriverID: \(driverId))")
         }
         
         DispatchQueue.main.async {
             self.participantNames = names
-            print("👥 SUCCESS! Participant names updated")
+            self.isAI = aiFlags
+            print("👥 SUCCESS! Participant names and AI flags updated")
         }
     }
     

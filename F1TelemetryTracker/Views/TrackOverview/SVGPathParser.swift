@@ -55,9 +55,9 @@ struct SVGPathParser {
         let height: CGFloat
         
         var transform: CGAffineTransform {
-            // Normalize to unit coordinate system
-            return CGAffineTransform(scaleX: 1.0/width, y: 1.0/height)
-                .translatedBy(x: -x, y: -y)
+            // Normalize to unit coordinate system: translate first, then scale
+            return CGAffineTransform(translationX: -x, y: -y)
+                .scaledBy(x: 1.0/width, y: 1.0/height)
         }
     }
     
@@ -241,12 +241,12 @@ struct SVGPathParser {
     
     private static func parsePath(_ pathData: String, transform: CGAffineTransform, viewBox: ViewBox?) -> CGPath? {
         let path = CGMutablePath()
-        var currentPoint = CGPoint.zero
-        var lastControlPoint = CGPoint.zero
-        var subpathStart = CGPoint.zero
+        var cursor = CGPoint.zero  // Model-space cursor (untransformed)
+        var lastControlPoint = CGPoint.zero  // Model-space
+        var subpathStart = CGPoint.zero  // Model-space
         
         // Apply viewBox transform if available
-        let baseTransform = viewBox?.transform.concatenating(transform) ?? transform
+        let T = viewBox?.transform.concatenating(transform) ?? transform
         
         // Tokenize the path data
         let tokens = tokenizePath(pathData)
@@ -263,95 +263,95 @@ struct SVGPathParser {
             case "M": // Move to
                 let points = consumePoints(from: tokens, startIndex: &i, count: 1)
                 if let point = points.first {
-                    let targetPoint = isRelative ? CGPoint(x: currentPoint.x + point.x, y: currentPoint.y + point.y) : point
-                    currentPoint = targetPoint.applying(baseTransform)
-                    subpathStart = currentPoint
-                    path.move(to: currentPoint)
+                    let p = isRelative ? CGPoint(x: cursor.x + point.x, y: cursor.y + point.y) : point
+                    cursor = p
+                    subpathStart = cursor
+                    path.move(to: cursor.applying(T))
                 }
                 
             case "L": // Line to
                 let points = consumePoints(from: tokens, startIndex: &i, count: 1)
                 if let point = points.first {
-                    let targetPoint = isRelative ? CGPoint(x: currentPoint.x + point.x, y: currentPoint.y + point.y) : point
-                    currentPoint = targetPoint.applying(baseTransform)
-                    path.addLine(to: currentPoint)
+                    let p = isRelative ? CGPoint(x: cursor.x + point.x, y: cursor.y + point.y) : point
+                    cursor = p
+                    path.addLine(to: cursor.applying(T))
                 }
                 
             case "H": // Horizontal line
                 if i < tokens.count, let x = Double(tokens[i]) {
                     i += 1
-                    let targetX = isRelative ? currentPoint.x + CGFloat(x) : CGFloat(x)
-                    currentPoint = CGPoint(x: targetX, y: currentPoint.y)
-                    path.addLine(to: currentPoint)
+                    let xNew = isRelative ? cursor.x + CGFloat(x) : CGFloat(x)
+                    cursor = CGPoint(x: xNew, y: cursor.y)
+                    path.addLine(to: cursor.applying(T))
                 }
                 
             case "V": // Vertical line
                 if i < tokens.count, let y = Double(tokens[i]) {
                     i += 1
-                    let targetY = isRelative ? currentPoint.y + CGFloat(y) : CGFloat(y)
-                    currentPoint = CGPoint(x: currentPoint.x, y: targetY)
-                    path.addLine(to: currentPoint)
+                    let yNew = isRelative ? cursor.y + CGFloat(y) : CGFloat(y)
+                    cursor = CGPoint(x: cursor.x, y: yNew)
+                    path.addLine(to: cursor.applying(T))
                 }
                 
             case "C": // Cubic Bezier curve
                 let points = consumePoints(from: tokens, startIndex: &i, count: 3)
                 if points.count == 3 {
-                    let cp1 = isRelative ? CGPoint(x: currentPoint.x + points[0].x, y: currentPoint.y + points[0].y) : points[0]
-                    let cp2 = isRelative ? CGPoint(x: currentPoint.x + points[1].x, y: currentPoint.y + points[1].y) : points[1]
-                    let endPoint = isRelative ? CGPoint(x: currentPoint.x + points[2].x, y: currentPoint.y + points[2].y) : points[2]
+                    let cp1 = isRelative ? CGPoint(x: cursor.x + points[0].x, y: cursor.y + points[0].y) : points[0]
+                    let cp2 = isRelative ? CGPoint(x: cursor.x + points[1].x, y: cursor.y + points[1].y) : points[1]
+                    let endPoint = isRelative ? CGPoint(x: cursor.x + points[2].x, y: cursor.y + points[2].y) : points[2]
                     
                     path.addCurve(
-                        to: endPoint.applying(baseTransform),
-                        control1: cp1.applying(baseTransform),
-                        control2: cp2.applying(baseTransform)
+                        to: endPoint.applying(T),
+                        control1: cp1.applying(T),
+                        control2: cp2.applying(T)
                     )
-                    currentPoint = endPoint.applying(baseTransform)
-                    lastControlPoint = cp2.applying(baseTransform)
+                    cursor = endPoint
+                    lastControlPoint = cp2
                 }
                 
             case "S": // Smooth cubic Bezier
                 let points = consumePoints(from: tokens, startIndex: &i, count: 2)
                 if points.count == 2 {
-                    // Reflect last control point
-                    let cp1 = CGPoint(x: 2 * currentPoint.x - lastControlPoint.x, y: 2 * currentPoint.y - lastControlPoint.y)
-                    let cp2 = isRelative ? CGPoint(x: currentPoint.x + points[0].x, y: currentPoint.y + points[0].y) : points[0]
-                    let endPoint = isRelative ? CGPoint(x: currentPoint.x + points[1].x, y: currentPoint.y + points[1].y) : points[1]
+                    // Reflect last control point in model space
+                    let cp1 = CGPoint(x: 2 * cursor.x - lastControlPoint.x, y: 2 * cursor.y - lastControlPoint.y)
+                    let cp2 = isRelative ? CGPoint(x: cursor.x + points[0].x, y: cursor.y + points[0].y) : points[0]
+                    let endPoint = isRelative ? CGPoint(x: cursor.x + points[1].x, y: cursor.y + points[1].y) : points[1]
                     
                     path.addCurve(
-                        to: endPoint.applying(baseTransform),
-                        control1: cp1,
-                        control2: cp2.applying(baseTransform)
+                        to: endPoint.applying(T),
+                        control1: cp1.applying(T),
+                        control2: cp2.applying(T)
                     )
-                    currentPoint = endPoint.applying(baseTransform)
-                    lastControlPoint = cp2.applying(baseTransform)
+                    cursor = endPoint
+                    lastControlPoint = cp2
                 }
                 
             case "Q": // Quadratic Bezier curve
                 let points = consumePoints(from: tokens, startIndex: &i, count: 2)
                 if points.count == 2 {
-                    let cp = isRelative ? CGPoint(x: currentPoint.x + points[0].x, y: currentPoint.y + points[0].y) : points[0]
-                    let endPoint = isRelative ? CGPoint(x: currentPoint.x + points[1].x, y: currentPoint.y + points[1].y) : points[1]
+                    let cp = isRelative ? CGPoint(x: cursor.x + points[0].x, y: cursor.y + points[0].y) : points[0]
+                    let endPoint = isRelative ? CGPoint(x: cursor.x + points[1].x, y: cursor.y + points[1].y) : points[1]
                     
                     path.addQuadCurve(
-                        to: endPoint.applying(baseTransform),
-                        control: cp.applying(baseTransform)
+                        to: endPoint.applying(T),
+                        control: cp.applying(T)
                     )
-                    currentPoint = endPoint.applying(baseTransform)
-                    lastControlPoint = cp.applying(baseTransform)
+                    cursor = endPoint
+                    lastControlPoint = cp
                 }
                 
             case "T": // Smooth quadratic Bezier
                 let points = consumePoints(from: tokens, startIndex: &i, count: 1)
                 if let point = points.first {
-                    // Reflect last control point
-                    let cp = CGPoint(x: 2 * currentPoint.x - lastControlPoint.x, y: 2 * currentPoint.y - lastControlPoint.y)
-                    let endPoint = isRelative ? CGPoint(x: currentPoint.x + point.x, y: currentPoint.y + point.y) : point
+                    // Reflect last control point in model space
+                    let cp = CGPoint(x: 2 * cursor.x - lastControlPoint.x, y: 2 * cursor.y - lastControlPoint.y)
+                    let endPoint = isRelative ? CGPoint(x: cursor.x + point.x, y: cursor.y + point.y) : point
                     
                     path.addQuadCurve(
-                        to: endPoint.applying(baseTransform),
-                        control: cp
+                        to: endPoint.applying(T),
+                        control: cp.applying(T)
                     )
-                    currentPoint = endPoint.applying(baseTransform)
+                    cursor = endPoint
                     lastControlPoint = cp
                 }
                 
@@ -364,13 +364,13 @@ struct SVGPathParser {
                     let largeArc = values[3] != 0
                     let sweep = values[4] != 0
                     let endPoint = isRelative ? 
-                        CGPoint(x: currentPoint.x + CGFloat(values[5]), y: currentPoint.y + CGFloat(values[6])) :
+                        CGPoint(x: cursor.x + CGFloat(values[5]), y: cursor.y + CGFloat(values[6])) :
                         CGPoint(x: CGFloat(values[5]), y: CGFloat(values[6]))
                     
-                    // Convert arc to cubic Bezier curves
+                    // Convert arc to cubic Bezier curves in model space, then transform
                     let bezierCurves = arcToBezier(
-                        start: currentPoint,
-                        end: endPoint.applying(baseTransform),
+                        start: cursor,
+                        end: endPoint,
                         rx: rx, ry: ry,
                         rotation: rotation,
                         largeArc: largeArc,
@@ -378,15 +378,19 @@ struct SVGPathParser {
                     )
                     
                     for curve in bezierCurves {
-                        path.addCurve(to: curve.end, control1: curve.cp1, control2: curve.cp2)
+                        path.addCurve(
+                            to: curve.end.applying(T), 
+                            control1: curve.cp1.applying(T), 
+                            control2: curve.cp2.applying(T)
+                        )
                     }
                     
-                    currentPoint = endPoint.applying(baseTransform)
+                    cursor = endPoint
                 }
                 
             case "Z": // Close path
                 path.closeSubpath()
-                currentPoint = subpathStart
+                cursor = subpathStart
                 
             default:
                 #if DEBUG

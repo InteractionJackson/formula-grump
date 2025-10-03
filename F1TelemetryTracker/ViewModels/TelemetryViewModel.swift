@@ -76,6 +76,7 @@ class TelemetryViewModel: ObservableObject {
     
     // Leaderboard data
     @Published var leaderboardData: [DriverData] = []
+    @Published var isAI: [Bool] = Array(repeating: true, count: 22)
     @Published var currentLap: Int = 0
     @Published var totalLaps: Int = 0
     @Published var safetyCarStatus: String = "None"
@@ -90,6 +91,15 @@ class TelemetryViewModel: ObservableObject {
     // Car position data from motion packets
     @Published var carPositions: [CGPoint] = Array(repeating: .zero, count: 22)  // World positions for all cars
     @Published var carProgresses: [Float] = Array(repeating: 0.0, count: 22)     // Track progress for all cars
+    
+    // MARK: - Coordinate Transform State
+    private var worldMin = CGPoint(x: CGFloat.infinity, y: CGFloat.infinity)
+    private var worldMax = CGPoint(x: -CGFloat.infinity, y: -CGFloat.infinity)
+    private var alignmentIsSolved = false
+    private var worldToGeom: CGAffineTransform = .identity
+    private var currentTrackIdForAlignment: Int8 = -1
+    private var worldSampleCount = 0
+    private let minSamplesForAlignment = 100
     
     private var telemetryReceiver: SimpleTelemetryReceiver
     private var cancellables = Set<AnyCancellable>()
@@ -165,6 +175,14 @@ class TelemetryViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] names in
                 self?.updateParticipantNames(names)
+            }
+            .store(in: &cancellables)
+        
+        // AI flags
+        telemetryReceiver.$isAI
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] aiFlags in
+                self?.updateAIFlags(aiFlags)
             }
             .store(in: &cancellables)
         
@@ -440,11 +458,15 @@ class TelemetryViewModel: ObservableObject {
             driver.position >= 0 && driver.position <= 22 && driver.position != 255
         }
         
-        // Sort by race position (1st, 2nd, 3rd, etc.)
-        let sortedDrivers = validDrivers.sorted { $0.position < $1.position }
+        // Sort by race position with fallback for position=0
+        let sortedDrivers = validDrivers.sorted { driver1, driver2 in
+            guard driver1.position > 0 else { return false }
+            guard driver2.position > 0 else { return true }
+            return driver1.position < driver2.position
+        }
         
         print("🏁 LEADERBOARD SORTING: Found \(validDrivers.count) drivers with valid positions")
-        for (_, driver) in sortedDrivers.prefix(5).enumerated() {
+        for driver in sortedDrivers.prefix(5) {
             print("   P\(driver.position): \(driver.name)")
         }
         
@@ -468,6 +490,12 @@ class TelemetryViewModel: ObservableObject {
     private func updateParticipantNames(_ names: [String]) {
         // Names are automatically used in updateLeaderboard
         print("👥 Participant names updated: \(names.prefix(5).joined(separator: ", "))...")
+    }
+    
+    private func updateAIFlags(_ aiFlags: [Bool]) {
+        self.isAI = aiFlags
+        let humanCount = aiFlags.filter { !$0 }.count
+        print("🤖 AI flags updated: \(humanCount) human(s), \(22 - humanCount) AI")
     }
     
     private func updateSessionData(_ sessionData: PacketSessionData?) {
@@ -518,7 +546,7 @@ class TelemetryViewModel: ObservableObject {
         var newPositions: [CGPoint] = []
         var newProgresses: [Float] = []
         
-        for (_, carMotion) in motionData.enumerated() {
+        for (index, carMotion) in motionData.enumerated() {
             // Store world position (X, Z coordinates - Y is vertical)
             let worldPosition = CGPoint(
                 x: CGFloat(carMotion.worldPositionX),
@@ -527,10 +555,15 @@ class TelemetryViewModel: ObservableObject {
             newPositions.append(worldPosition)
             
             // Calculate track progress using TrackProjector
-            // For now, use a simple approximation based on distance along track
-            // This will be improved when we implement proper track projection
             let progress = calculateTrackProgress(from: worldPosition)
             newProgresses.append(progress)
+            
+            #if DEBUG
+            // Log first few cars for debugging coordinate transformation
+            if index < 3 {
+                print("🏎️ Car \(index): F1 World(\(carMotion.worldPositionX), \(carMotion.worldPositionZ)) → Progress: \(progress)")
+            }
+            #endif
         }
         
         // Update published properties
@@ -558,80 +591,188 @@ class TelemetryViewModel: ObservableObject {
         // Transform world coordinates to track-relative coordinates
         let transformedPosition = transformWorldToTrackCoordinates(worldPosition: worldPosition)
         
-        // Get track path points directly from PolylineGeometry
-        let trackPoints = trackGeometry.points
-        guard trackPoints.count > 1 else { return 0.0 }
+        // Use TrackProjector for robust projection with coarse sampling + refinement
+        let trackGeometryImpl = TrackGeometryImpl(geometry: trackGeometry)
+        let projector = TrackProjector(trackGeometry: trackGeometryImpl)
+        let progress = projector.projectGeometryPointToProgress(transformedPosition)
         
-        // Find the closest point on the track to the transformed position
-        var closestDistance: Float = Float.greatestFiniteMagnitude
-        var closestSegmentIndex = 0
-        var closestProgressOnSegment: Float = 0.0
-        
-        // Check each segment of the track
-        for i in 0..<(trackPoints.count - 1) {
-            let segmentStart = trackPoints[i]
-            let segmentEnd = trackPoints[i + 1]
-            
-            // Project transformed position onto this line segment
-            let (distance, progressOnSegment) = distanceToLineSegment(
-                point: transformedPosition,
-                lineStart: segmentStart,
-                lineEnd: segmentEnd
-            )
-            
-            if distance < closestDistance {
-                closestDistance = distance
-                closestSegmentIndex = i
-                closestProgressOnSegment = progressOnSegment
-            }
-        }
-        
-        // Calculate overall progress along track
-        let segmentProgress = Float(closestSegmentIndex) / Float(trackPoints.count - 1)
-        let segmentLength = 1.0 / Float(trackPoints.count - 1)
-        let totalProgress = segmentProgress + (closestProgressOnSegment * segmentLength)
-        
-        return min(max(totalProgress, 0.0), 1.0)
+        return Float(progress)
     }
     
     private func transformWorldToTrackCoordinates(worldPosition: CGPoint) -> CGPoint {
-        // NO TRANSFORMATION NEEDED! 
-        // Use F1 24 world coordinates directly since our track geometry now matches
+        let currentTrackId = TrackId(rawValue: self.trackId) ?? .unknown
+        let geometry = TrackGeometryCache.shared.geometry(for: currentTrackId)
         
-        let worldX = Float(worldPosition.x)  // F1 24 X (East/West)
-        let worldZ = Float(worldPosition.y)  // F1 24 Z (North/South) - passed as Y in CGPoint
-        
-        #if DEBUG
-        print("🌍 F1 WORLD COORDINATES: (X=\(worldX), Z=\(worldZ)) - using directly!")
-        #endif
-        
-        // Return coordinates as-is - our track geometry now uses F1 24's coordinate system
-        return worldPosition
-    }
-    
-    private func distanceToLineSegment(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> (distance: Float, progressOnSegment: Float) {
-        let dx = lineEnd.x - lineStart.x
-        let dy = lineEnd.y - lineStart.y
-        let segmentLengthSquared = dx * dx + dy * dy
-        
-        if segmentLengthSquared == 0 {
-            // Line segment is actually a point
-            let distance = sqrt(pow(point.x - lineStart.x, 2) + pow(point.y - lineStart.y, 2))
-            return (Float(distance), 0.0)
+        // Reset alignment if track changed
+        if self.trackId != currentTrackIdForAlignment {
+            resetAlignment()
+            currentTrackIdForAlignment = self.trackId
         }
         
-        // Calculate projection of point onto line segment
-        let t = max(0, min(1, ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / segmentLengthSquared))
+        // Collect world coordinate samples for alignment
+        if !alignmentIsSolved {
+            collectWorldSample(worldPosition)
+            
+            // Try to solve alignment once we have enough samples
+            if worldSampleCount >= minSamplesForAlignment {
+                solveWorldToGeometryTransform(geometry: geometry)
+            }
+        }
         
-        // Find closest point on segment
-        let closestX = lineStart.x + t * dx
-        let closestY = lineStart.y + t * dy
+        // Apply the transform (identity if not yet solved)
+        let result = worldPosition.applying(worldToGeom)
         
-        // Calculate distance
-        let distance = sqrt(pow(point.x - closestX, 2) + pow(point.y - closestY, 2))
+        #if DEBUG
+        if worldSampleCount < 5 || worldSampleCount % 50 == 0 {
+            let bounds = geometry.bounds
+            print("🌍 F1 WORLD: (\(worldPosition.x), \(worldPosition.y)) → GEOM: (\(result.x), \(result.y)) [samples: \(worldSampleCount), solved: \(alignmentIsSolved)]")
+            print("📐 GEOM BOUNDS: (\(bounds.minX), \(bounds.minY)) to (\(bounds.maxX), \(bounds.maxY)) [\(bounds.width) x \(bounds.height)]")
+        }
+        #endif
         
-        return (Float(distance), Float(t))
+        return result
     }
+    
+    private func resetAlignment() {
+        worldMin = CGPoint(x: CGFloat.infinity, y: CGFloat.infinity)
+        worldMax = CGPoint(x: -CGFloat.infinity, y: -CGFloat.infinity)
+        alignmentIsSolved = false
+        worldToGeom = .identity
+        worldSampleCount = 0
+        
+        #if DEBUG
+        print("🔄 COORDINATE ALIGNMENT RESET for track \(trackId)")
+        #endif
+    }
+    
+    private func collectWorldSample(_ worldPosition: CGPoint) {
+        guard worldPosition.x.isFinite && worldPosition.y.isFinite else { return }
+        
+        worldMin.x = min(worldMin.x, worldPosition.x)
+        worldMin.y = min(worldMin.y, worldPosition.y)
+        worldMax.x = max(worldMax.x, worldPosition.x)
+        worldMax.y = max(worldMax.y, worldPosition.y)
+        worldSampleCount += 1
+    }
+    
+    private func solveWorldToGeometryTransform(geometry: PolylineGeometry) {
+        let g = geometry.bounds
+        guard worldMin.x.isFinite, worldMax.x.isFinite,
+              worldMin.y.isFinite, worldMax.y.isFinite else {
+            #if DEBUG
+            print("⚠️ ALIGNMENT FAILED: Invalid world bounds")
+            #endif
+            return
+        }
+        
+        let w = CGRect(
+            x: worldMin.x, y: worldMin.y,
+            width: worldMax.x - worldMin.x,
+            height: worldMax.y - worldMin.y
+        )
+        
+        guard w.width > 1.0 && w.height > 1.0 else {
+            #if DEBUG
+            print("⚠️ ALIGNMENT FAILED: World bounds too small (\(w.width) x \(w.height))")
+            #endif
+            return
+        }
+        
+        #if DEBUG
+        print("🎯 SOLVING ALIGNMENT:")
+        print("   World bounds: (\(w.minX), \(w.minY)) to (\(w.maxX), \(w.maxY)) [\(w.width) x \(w.height)]")
+        print("   Geom bounds:  (\(g.minX), \(g.minY)) to (\(g.maxX), \(g.maxY)) [\(g.width) x \(g.height)]")
+        #endif
+        
+        // Try 4 rotation candidates: 0°, 90°, 180°, 270°
+        let candidates: [CGAffineTransform] = [
+            .identity,                                    // 0°
+            CGAffineTransform(rotationAngle: .pi/2),     // 90°
+            CGAffineTransform(rotationAngle: .pi),       // 180°
+            CGAffineTransform(rotationAngle: 3 * .pi/2), // 270°
+        ]
+        
+        var best: (transform: CGAffineTransform, score: CGFloat) = (.identity, .greatestFiniteMagnitude)
+        
+        for (index, baseRotation) in candidates.enumerated() {
+            // 1) Move world to origin, apply rotation
+            var transform = CGAffineTransform(translationX: -w.midX, y: -w.midY)
+                .concatenating(baseRotation)
+            
+            // 2) Calculate rotated bounding box
+            let corners = [
+                CGPoint(x: -w.width/2, y: -w.height/2).applying(baseRotation),
+                CGPoint(x:  w.width/2, y: -w.height/2).applying(baseRotation),
+                CGPoint(x: -w.width/2, y:  w.height/2).applying(baseRotation),
+                CGPoint(x:  w.width/2, y:  w.height/2).applying(baseRotation),
+            ]
+            
+            let rxMin = corners.map { $0.x }.min()!
+            let rxMax = corners.map { $0.x }.max()!
+            let ryMin = corners.map { $0.y }.min()!
+            let ryMax = corners.map { $0.y }.max()!
+            
+            let rotatedWidth = rxMax - rxMin
+            let rotatedHeight = ryMax - ryMin
+            
+            // 3) Scale to fit geometry bounds (preserve aspect ratio)
+            let scaleX = g.width / max(rotatedWidth, 1e-6)
+            let scaleY = g.height / max(rotatedHeight, 1e-6)
+            let scale = min(scaleX, scaleY) // Preserve aspect ratio
+            
+            transform = transform.scaledBy(x: scale, y: scale)
+            
+            // 4) Translate to geometry center
+            transform = transform.translatedBy(x: g.midX, y: g.midY)
+            
+            // 5) Score this transform by sampling projection error
+            let score = sampleProjectionError(transform: transform, geometry: geometry)
+            
+            #if DEBUG
+            print("   Candidate \(index) (\(index * 90)°): scale=\(String(format: "%.3f", scale)), score=\(String(format: "%.1f", score))")
+            #endif
+            
+            if score < best.score {
+                best = (transform, score)
+            }
+        }
+        
+        worldToGeom = best.transform
+        alignmentIsSolved = true
+        
+        #if DEBUG
+        print("✅ ALIGNMENT SOLVED: score=\(best.score)")
+        #endif
+    }
+    
+    private func sampleProjectionError(transform: CGAffineTransform, geometry: PolylineGeometry) -> CGFloat {
+        let samplePoints = [
+            CGPoint(x: worldMin.x, y: worldMin.y),
+            CGPoint(x: worldMax.x, y: worldMin.y),
+            CGPoint(x: worldMin.x, y: worldMax.y),
+            CGPoint(x: worldMax.x, y: worldMax.y),
+            CGPoint(x: (worldMin.x + worldMax.x) / 2, y: (worldMin.y + worldMax.y) / 2),
+        ]
+        
+        var totalError: CGFloat = 0
+        let trackPoints = geometry.points
+        
+        for worldPoint in samplePoints {
+            let geomPoint = worldPoint.applying(transform)
+            
+            // Find distance to nearest track point
+            var minDistance: CGFloat = .greatestFiniteMagnitude
+            for trackPoint in trackPoints {
+                let distance = geomPoint.distance(to: trackPoint)
+                minDistance = min(minDistance, distance)
+            }
+            
+            totalError += minDistance
+        }
+        
+        return totalError / CGFloat(samplePoints.count)
+    }
+    
     
     private func getDriverStatus(_ status: UInt8) -> String {
         switch status {

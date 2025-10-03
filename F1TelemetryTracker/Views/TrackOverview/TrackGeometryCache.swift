@@ -7,6 +7,7 @@
 
 import Foundation
 import CoreGraphics
+import UIKit
 
 // MARK: - Track Geometry Cache
 final class TrackGeometryCache {
@@ -84,47 +85,66 @@ final class TrackGeometryCache {
     private func loadSVGGeometry(for trackId: TrackId) -> PolylineGeometry? {
         guard let filename = svgFilename(for: trackId) else { return nil }
         
-        // Try Bundle.main first (app target)
-        var svgPath = Bundle.main.path(forResource: filename.replacingOccurrences(of: ".svg", with: ""), ofType: "svg")
-        
-        // Fallback to direct file path for development
-        if svgPath == nil {
-            svgPath = "/Users/mattjackson/Documents/GitHub/formula-grump/F1TelemetryTracker/Assets.xcassets/track outlines/\(filename)"
-        }
-        
-        guard let path = svgPath else {
+        guard let svgContent = loadSVG(named: filename) else {
             #if DEBUG
             print("⚠️ svg.file.notFound: \(filename)")
             #endif
             return nil
         }
-        
-        do {
-            let svgContent = try String(contentsOfFile: path, encoding: .utf8)
             
-            guard let cgPath = SVGPathParser.parseUnifiedPath(from: svgContent) else {
-                #if DEBUG
-                print("⚠️ svg.parse.failed: \(filename)")
-                #endif
-                return nil
-            }
-            
-            // Flatten the path with appropriate tolerance
-            let tolerance: CGFloat = 2.0 // 2 points tolerance for smooth curves
-            let geometry = PolylineGeometry.fromPath(cgPath, tolerance: tolerance)
-            
+        guard let cgPath = SVGPathParser.parseUnifiedPath(from: svgContent) else {
             #if DEBUG
-            print("✅ svg.geometry.loaded: \(filename) -> \(geometry.points.count) points")
-            #endif
-            
-            return geometry
-            
-        } catch {
-            #if DEBUG
-            print("⚠️ svg.file.readError: \(filename) - \(error)")
+            print("⚠️ svg.parse.failed: \(filename)")
             #endif
             return nil
         }
+        
+        // Flatten the path with scale-aware tolerance
+        let bbox = cgPath.boundingBox
+        let maxDim = max(bbox.width, bbox.height)
+        let tolerance = maxDim * 0.002   // ~0.2% of size for smooth curves
+        let geometry = PolylineGeometry.fromPath(cgPath, tolerance: tolerance)
+        
+        #if DEBUG
+        print("📐 svg.flattening: bbox=\(bbox.width)x\(bbox.height), tolerance=\(tolerance)")
+        print("✅ svg.geometry.loaded: \(filename) -> \(geometry.points.count) points")
+        #endif
+        
+        return geometry
+    }
+    
+    /// Asset-catalog friendly SVG loader with multiple fallbacks
+    private func loadSVG(named filename: String) -> String? {
+        let name = filename.replacingOccurrences(of: ".svg", with: "")
+        
+        // Try Bundle.main URL first (app target)
+        if let url = Bundle.main.url(forResource: name, withExtension: "svg"),
+           let content = try? String(contentsOf: url, encoding: .utf8) {
+            #if DEBUG
+            print("📁 svg.loaded.bundle: \(filename)")
+            #endif
+            return content
+        }
+        
+        // Try NSDataAsset (for asset catalog)
+        if let dataAsset = NSDataAsset(name: name),
+           let content = String(data: dataAsset.data, encoding: .utf8) {
+            #if DEBUG
+            print("📁 svg.loaded.dataAsset: \(filename)")
+            #endif
+            return content
+        }
+        
+        // Development fallback: direct file path
+        let devPath = "/Users/mattjackson/Documents/GitHub/formula-grump/F1TelemetryTracker/Assets.xcassets/track outlines/\(filename)"
+        if let content = try? String(contentsOfFile: devPath, encoding: .utf8) {
+            #if DEBUG
+            print("📁 svg.loaded.devPath: \(filename)")
+            #endif
+            return content
+        }
+        
+        return nil
     }
     
     private func createFallbackGeometry(for trackId: TrackId) -> PolylineGeometry {

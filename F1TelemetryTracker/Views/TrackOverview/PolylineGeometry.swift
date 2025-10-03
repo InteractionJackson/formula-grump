@@ -324,3 +324,71 @@ extension CGPoint {
         return sqrt(dx * dx + dy * dy)
     }
 }
+
+// MARK: - PolylineGeometry Arc-Length Progress Extension
+extension PolylineGeometry {
+    /// Find the arc-length-correct progress (0.0-1.0) for the closest point on the polyline
+    func progressForClosestPoint(to targetPoint: CGPoint) -> CGFloat {
+        guard points.count > 1 else { return 0.0 }
+        
+        var closestDistance: CGFloat = .greatestFiniteMagnitude
+        var closestSegmentIndex = 0
+        var closestProgressOnSegment: CGFloat = 0.0
+        
+        // Find the closest segment and position on that segment
+        for i in 0..<(points.count - 1) {
+            let lineStart = points[i]
+            let lineEnd = points[i + 1]
+            
+            let (distance, progressOnSegment) = Self.distanceAndProgressToLineSegment(
+                point: targetPoint,
+                lineStart: lineStart,
+                lineEnd: lineEnd
+            )
+            
+            if distance < closestDistance {
+                closestDistance = distance
+                closestSegmentIndex = i
+                closestProgressOnSegment = progressOnSegment
+            }
+        }
+        
+        // Convert to arc-length-based progress
+        let segmentStartLength = lengthTable[closestSegmentIndex]
+        let segmentEndLength = lengthTable[closestSegmentIndex + 1]
+        let segmentLength = segmentEndLength - segmentStartLength
+        
+        let lengthAtPoint = segmentStartLength + (segmentLength * closestProgressOnSegment)
+        let progress = totalLength > 0 ? lengthAtPoint / totalLength : 0.0
+        
+        return max(0.0, min(1.0, progress))
+    }
+    
+    private static func distanceAndProgressToLineSegment(
+        point: CGPoint,
+        lineStart: CGPoint,
+        lineEnd: CGPoint
+    ) -> (distance: CGFloat, progressOnSegment: CGFloat) {
+        let dx = lineEnd.x - lineStart.x
+        let dy = lineEnd.y - lineStart.y
+        let segmentLengthSquared = dx * dx + dy * dy
+        
+        guard segmentLengthSquared > 1e-10 else {
+            // Degenerate segment (start == end)
+            let distance = point.distance(to: lineStart)
+            return (distance, 0.0)
+        }
+        
+        // Project point onto the line segment
+        let t = max(0.0, min(1.0, ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / segmentLengthSquared))
+        
+        // Find the closest point on the segment
+        let closestPoint = CGPoint(
+            x: lineStart.x + t * dx,
+            y: lineStart.y + t * dy
+        )
+        
+        let distance = point.distance(to: closestPoint)
+        return (distance, t)
+    }
+}
