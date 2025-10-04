@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import UIKit
 
 // MARK: - Track Overview Tile
 struct TrackOverviewTile: View {
@@ -38,7 +39,7 @@ struct TrackOverviewTile: View {
                         .font(.system(size: 18, weight: .regular))
                         .foregroundStyle(TrackOverviewStyle.titleText)
                     Text("Lap Comparison (Time vs Speed)")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AppTypography.tileTitle())
                         .foregroundStyle(TrackOverviewStyle.titleText)
                     Spacer()
                 }
@@ -46,20 +47,17 @@ struct TrackOverviewTile: View {
                                   currentLapPoints: telemetryViewModel.currentLapPoints)
             }
             .padding(TrackOverviewStyle.cardPadding)
-            .background(TrackOverviewStyle.cardBackground)
+            .primaryRowBackground(cornerRadius: TrackOverviewStyle.cardRadius, corners: [.topLeft, .topRight])
+
             HStack(spacing: TrackOverviewStyle.spacing) {
                 WeatherPill(icon: nil, label: "TRACK", value: formatTemperature(telemetryViewModel.trackTemperature))
                 WeatherPill(icon: nil, label: "RAIN", value: formatRain(telemetryViewModel.rainIntensity))
-            WeatherPill(icon: TrackOverviewStyle.weatherIcon(for: telemetryViewModel.weather), label: "WEATHER", value: "")
+                WeatherPill(icon: TrackOverviewStyle.weatherIcon(for: telemetryViewModel.weather), label: "WEATHER", value: "")
             }
             .padding(TrackOverviewStyle.cardPadding)
-            .background(Color(hex: "#F6F8F9"))
+            .secondaryRowBackground(cornerRadius: TrackOverviewStyle.cardRadius, corners: [.bottomLeft, .bottomRight])
         }
-        .clipShape(RoundedRectangle(cornerRadius: TrackOverviewStyle.cardRadius, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: TrackOverviewStyle.cardRadius, style: .continuous)
-                .stroke(Color(hex: "#EFEFEF"), lineWidth: 1)
-        )
+        .primaryTileBackground()
         .onAppear {
             trackProfileStore.updateIfNeeded(for: telemetryViewModel.trackId)
         }
@@ -95,13 +93,14 @@ struct WeatherPill: View {
             HStack(spacing: 4) {
                 if let icon = icon {
                     Image(systemName: icon)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color(hex: "#6D7A88")) // textSub color
+                        .font(AppTypography.label())
+                        .foregroundStyle(AppColors.labelText)
                 }
                 
                 Text(label)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Color(hex: "#6D7A88")) // textSub color
+                    .font(AppTypography.label())
+                    .foregroundStyle(AppColors.labelText)
                     .tracking(0.5)
             }
             
@@ -110,22 +109,20 @@ struct WeatherPill: View {
             // Value on the right
             if !value.isEmpty {
                 Text(value)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(AppTypography.secondaryData())
                     .monospacedDigit()
-                    .foregroundStyle(Color(hex: "#0B0F14")) // text color
+                    .foregroundStyle(AppColors.primaryData)
             } else if let icon = icon {
                 // Show icon on the right if no value (for weather pill)
                 Image(systemName: icon)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color(hex: "#0B0F14")) // text color
+                    .font(AppTypography.secondaryData())
+                    .foregroundStyle(AppColors.primaryData)
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color(hex: "#DBE5E6"), lineWidth: 1) // Same as LapTile stroke
-        )
+        .background(AppColors.secondaryTileBackground)
+        .neutralInfoTile(cornerRadius: 8)
     }
 }
 
@@ -142,5 +139,5 @@ struct WeatherPill: View {
             return vm
         }())
         .padding()
-        .background(Color(hex: "#F6F8FA"))
+        .background(AppColors.appBackground)
 }

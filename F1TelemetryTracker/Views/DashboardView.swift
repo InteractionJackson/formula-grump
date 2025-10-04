@@ -23,7 +23,10 @@ struct DashboardView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 24) {
-                ConnectionHeader(isConnected: telemetryViewModel.isConnected)
+                ConnectionHeader(
+                    isConnected: telemetryViewModel.isConnected,
+                    onTapStatus: { showingConnectionStatus = true }
+                )
 
                 HStack(spacing: 24) {
                     VStack(spacing: 24) {
@@ -37,14 +40,14 @@ struct DashboardView: View {
                     }
 
                     VStack(spacing: 24) {
-                SplitsView(
-                    currentLapTime: formatTime(telemetryViewModel.currentLapTime),
-                    sector1Time: formatSectorTime(telemetryViewModel.sector1Time),
-                    sector2Time: formatSectorTime(telemetryViewModel.sector2Time),
-                    sector3Time: formatSectorTime(telemetryViewModel.sector3Time),
-                    lastLapTime: formatTime(telemetryViewModel.lastLapTime),
-                    bestLapTime: formatTime(telemetryViewModel.bestLapTime)
-                )
+                        SplitsView(
+                            currentLapTime: formatTime(telemetryViewModel.currentLapTime),
+                            sector1Time: formatSectorTime(telemetryViewModel.sector1Time),
+                            sector2Time: formatSectorTime(telemetryViewModel.sector2Time),
+                            sector3Time: formatSectorTime(telemetryViewModel.sector3Time),
+                            lastLapTime: formatTime(telemetryViewModel.lastLapTime),
+                            bestLapTime: formatTime(telemetryViewModel.bestLapTime)
+                        )
 
                         TrackOverviewTile()
                             .environmentObject(telemetryViewModel)
@@ -59,16 +62,118 @@ struct DashboardView: View {
         .sheet(isPresented: $showingConnectionStatus) {
             ConnectionStatusView(viewModel: telemetryViewModel)
         }
-        .onAppear {
-            telemetryViewModel.connect()
-        }
-        .onDisappear {
-            telemetryViewModel.disconnect()
-        }
-        }
+        .onAppear { telemetryViewModel.connect() }
+        .onDisappear { telemetryViewModel.disconnect() }
     }
     
-    // Computed property for gear display
+    private func formatTime(_ seconds: Float) -> String {
+        guard seconds > 0 else { return "00:00:00" }
+        let totalMs = Int(seconds * 1000)
+        let minutes = totalMs / 60000
+        let secs = (totalMs % 60000) / 1000
+        let ms = totalMs % 1000
+        return String(format: "%02d:%02d:%02d", minutes, secs, ms / 10)
+    }
+    
+    private func formatSectorTime(_ seconds: Float) -> String {
+        guard seconds > 0 else { return "--:--.---" }
+        let totalMs = Int(seconds * 1000)
+        let minutes = totalMs / 60000
+        let secs = (totalMs % 60000) / 1000
+        let ms = totalMs % 1000
+        return String(format: "%d:%02d.%03d", minutes, secs, ms)
+    }
+}
+
+struct ConnectionHeader: View {
+    let isConnected: Bool
+    let onTapStatus: () -> Void
+
+    var body: some View {
+        HStack(spacing: 16) {
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(isConnected ? AppColors.green : AppColors.red)
+                    .frame(width: 12, height: 12)
+                Text(isConnected ? "Connected" : "Offline")
+                    .font(AppTypography.label())
+                    .foregroundStyle(AppColors.labelText)
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
+            .background(AppColors.secondaryTileBackground)
+            .neutralInfoTile()
+            .onTapGesture { onTapStatus() }
+
+            Spacer()
+
+            Text("Formula Grump")
+                .font(AppTypography.secondaryData())
+                .foregroundStyle(AppColors.primaryData)
+        }
+        .padding(.horizontal, 30)
+    }
+}
+
+struct SpeedTile: View {
+    @ObservedObject var viewModel: TelemetryViewModel
+
+    var body: some View {
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 24) {
+                HStack(spacing: 12) {
+                    Image(systemName: "speedometer")
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundStyle(AppColors.tileTitle)
+                    Text("Speed, RPM, DRS & Gear")
+                        .font(AppTypography.tileTitle())
+                        .foregroundStyle(AppColors.tileTitle)
+                    Spacer()
+                }
+                .padding(.top, AppLayout.tilePadding)
+
+                HStack(alignment: .center) {
+                    VStack(spacing: 8) {
+                        Text("\(viewModel.speedMPH)")
+                            .font(AppTypography.primaryData())
+                            .foregroundStyle(AppColors.primaryData)
+                        Text("MPH")
+                            .font(AppTypography.label())
+                            .foregroundStyle(AppColors.labelText)
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    CircularGaugeView(rpmValue: viewModel.rpmValue, ersValue: viewModel.ersValue)
+                        .scaleEffect(0.72)
+                        .frame(width: 150, height: 150)
+                        .frame(maxWidth: .infinity)
+
+                    VStack(spacing: 8) {
+                        Text(gearDisplayText(for: viewModel.gear))
+                            .font(AppTypography.primaryData())
+                            .foregroundStyle(AppColors.primaryData)
+                        Text("Gear")
+                            .font(AppTypography.label())
+                            .foregroundStyle(AppColors.labelText)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .padding(.bottom, AppLayout.tilePadding)
+            }
+            .padding(.horizontal, AppLayout.tilePadding)
+            .primaryRowBackground(cornerRadius: AppLayout.tileCornerRadius, corners: [.topLeft, .topRight])
+
+            HStack(spacing: 16) {
+                LabeledBar(title: "Brake", progress: viewModel.brakePercent, activeColor: AppColors.red)
+                DRSIndicator(isActive: viewModel.isDRSActive)
+                LabeledBar(title: "Throttle", progress: viewModel.throttlePercent, activeColor: AppColors.green)
+            }
+            .padding(AppLayout.tilePadding)
+            .secondaryRowBackground(cornerRadius: AppLayout.tileCornerRadius, corners: [.bottomLeft, .bottomRight])
+        }
+        .primaryTileBackground()
+    }
+
     private func gearDisplayText(for gear: Int) -> String {
         switch gear {
         case -1: return "R"
@@ -76,55 +181,52 @@ struct DashboardView: View {
         default: return "\(gear)"
         }
     }
-    
-    private func formatTime(_ seconds: Float) -> String {
-        if seconds <= 0 {
-            return "00:00:00"
+}
+
+private struct LabeledBar: View {
+    let title: String
+    let progress: Double
+    let activeColor: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 4) {
+                ForEach(0..<10, id: \.self) { index in
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(index < Int((progress * 10).clamped(to: 0...10)) ? activeColor : activeColor.opacity(0.2))
+                        .frame(height: 12)
+                }
+            }
+
+            Text(title.uppercased())
+                .font(AppTypography.label())
+                .foregroundStyle(AppColors.labelText)
         }
-        
-        let totalMs = Int(seconds * 1000)
-        let minutes = totalMs / 60000
-        let secs = (totalMs % 60000) / 1000
-        let ms = totalMs % 1000
-        
-        return String(format: "%02d:%02d:%02d", minutes, secs, ms / 10)
+        .frame(maxWidth: .infinity)
     }
-    
-    private func formatSectorTime(_ seconds: Float) -> String {
-        if seconds <= 0 {
-            return "--:--.---"
-        }
-        
-        let totalMs = Int(seconds * 1000)
-        let minutes = totalMs / 60000
-        let secs = (totalMs % 60000) / 1000
-        let ms = totalMs % 1000
-        
-        return String(format: "%d:%02d.%03d", minutes, secs, ms)
+}
+
+private struct DRSIndicator: View {
+    let isActive: Bool
+
+    var body: some View {
+        Text("DRS")
+            .font(AppTypography.secondaryData())
+            .foregroundStyle(isActive ? AppColors.primaryData : AppColors.labelText)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(isActive ? AppColors.blue.opacity(0.3) : AppColors.secondaryTileBackground)
+            )
+            .neutralInfoTile(cornerRadius: 10)
+            .frame(minWidth: 72)
     }
+}
 
-
-// MARK: - Helpers
-
-extension Color {
-    init(hex: String) {
-        let hexSanitized = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hexSanitized).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hexSanitized.count {
-        case 3: (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default: (a, r, g, b) = (255, 0, 0, 0)
-        }
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255,
-            opacity: Double(a) / 255
-        )
+extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }
 

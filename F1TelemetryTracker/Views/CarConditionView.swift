@@ -5,42 +5,22 @@ struct CarConditionView: View {
     @EnvironmentObject var telemetryViewModel: TelemetryViewModel
     
     let engineTemperature: UInt16
-    let brakesTemperature: [UInt16] // [RL, RR, FL, FR]
-    let tyresSurfaceTemperature: [UInt8] // [RL, RR, FL, FR]
-    
-    // Design tokens - matching dashboard design system
-    struct T {
-        static let topCard     = Color(hex: "#FFFFFF")
-        static let text        = Color(hex: "#0B0F14")
-        static let textSub     = Color(hex: "#6D7A88")
-        
-        static let rCard: CGFloat = 24
-        static let padCard: CGFloat = 16
-        static let gap: CGFloat = 12
-        
-        // Condition colors
-        static let goodColor = Color(hex: "#30DB47")
-        static let warningColor = Color(hex: "#FFA500")
-        static let criticalColor = Color(hex: "#FF4444")
-    }
+    let brakesTemperature: [UInt16]
+    let tyresSurfaceTemperature: [UInt8]
     
     var body: some View {
-        // SINGLE TILE with white top and darker bottom section
         VStack(spacing: 0) {
-            // TOP SECTION: White background with title and car diagram
-            VStack(alignment: .leading, spacing: T.gap) {
-                // Title row
-                HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: AppLayout.tileSpacing) {
+                HStack(spacing: 12) {
                     Image(systemName: "wrench.and.screwdriver")
                         .font(.system(size: 18, weight: .regular))
-                        .foregroundStyle(T.text)
+                        .foregroundStyle(AppColors.tileTitle)
                     Text("Car Condition")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(T.text)
+                        .font(AppTypography.tileTitle())
+                        .foregroundStyle(AppColors.tileTitle)
                     Spacer()
                 }
                 
-                // Car diagram with dynamic SVG styling
                 DynamicCarSVG(
                     engineCondition: engineCondition,
                     brakeConditions: brakeConditions,
@@ -50,92 +30,56 @@ struct CarConditionView: View {
                 .frame(maxWidth: .infinity)
                 .frame(maxHeight: .infinity)
             }
-            .padding(T.padCard)
-            .background(T.topCard)
+            .padding(AppLayout.tilePadding)
+            .primaryRowBackground(cornerRadius: AppLayout.tileCornerRadius, corners: [.topLeft, .topRight])
             
-            // BOTTOM SECTION: Darker background with tyre information tiles
-            HStack(spacing: T.gap) {
-                TyreTile(title: "TYRES", value: telemetryViewModel.tyreCompound)
-                TyreTile(title: "LIFESPAN", value: "\(telemetryViewModel.tyreAge) laps")
+            HStack(spacing: AppLayout.tileSpacing) {
+                TyreTile(title: "Tyres", value: telemetryViewModel.tyreCompound)
+                TyreTile(title: "Lifespan", value: "\(telemetryViewModel.tyreAge) laps")
             }
-            .padding(T.padCard)
-            .background(Color(hex: "#F6F8F9"))
+            .padding(AppLayout.tilePadding)
+            .secondaryRowBackground(cornerRadius: AppLayout.tileCornerRadius, corners: [.bottomLeft, .bottomRight])
         }
-        .clipShape(RoundedRectangle(cornerRadius: T.rCard, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: T.rCard, style: .continuous)
-                .stroke(Color(hex: "#EFEFEF"), lineWidth: 1)
-        )
+        .primaryTileBackground()
     }
     
     // MARK: - Computed Properties for Condition Assessment
     
     private var engineCondition: ComponentCondition {
-        // Combine temperature and damage for overall engine condition
         let temp = Int(engineTemperature)
         let damage = Int(telemetryViewModel.engineDamage)
         
-        // Temperature thresholds
-        let tempCondition: ComponentCondition
-        if temp < 90 { tempCondition = .good }
-        else if temp < 110 { tempCondition = .warning }
-        else { tempCondition = .critical }
+        let tempCondition: ComponentCondition = temp < 90 ? .good : (temp < 110 ? .warning : .critical)
+        let damageCondition: ComponentCondition = damage < 10 ? .good : (damage < 30 ? .warning : .critical)
         
-        // Damage thresholds
-        let damageCondition: ComponentCondition
-        if damage < 10 { damageCondition = .good }
-        else if damage < 30 { damageCondition = .warning }
-        else { damageCondition = .critical }
-        
-        // Return the worst condition
         return [tempCondition, damageCondition].max { $0.severity < $1.severity } ?? .good
     }
     
     private var brakeConditions: [ComponentCondition] {
-        return brakesTemperature.map { temp in
-            let tempInt = Int(temp)
-            if tempInt < 300 { return .good }
-            else if tempInt < 500 { return .warning }
-            else { return .critical }
+        brakesTemperature.map { temp in
+            let t = Int(temp)
+            return t < 300 ? .good : (t < 500 ? .warning : .critical)
         }
     }
     
     private var tyreConditions: [ComponentCondition] {
-        return (0..<4).map { index in
-            // Combine temperature and damage for overall tyre condition
+        (0..<4).map { index in
             let temp = index < tyresSurfaceTemperature.count ? Int(tyresSurfaceTemperature[index]) : 0
-            let damage = index < telemetryViewModel.tyresDamage.count ? telemetryViewModel.tyresDamage[index] : 0.0
+            let damage = index < telemetryViewModel.tyresDamage.count ? telemetryViewModel.tyresDamage[index] : 0
             
-            // Temperature thresholds
-            let tempCondition: ComponentCondition
-            if temp < 80 { tempCondition = .good }
-            else if temp < 100 { tempCondition = .warning }
-            else { tempCondition = .critical }
+            let tempCondition: ComponentCondition = temp < 80 ? .good : (temp < 100 ? .warning : .critical)
+            let damageCondition: ComponentCondition = damage < 10 ? .good : (damage < 30 ? .warning : .critical)
             
-            // Damage thresholds
-            let damageCondition: ComponentCondition
-            if damage < 10.0 { damageCondition = .good }
-            else if damage < 30.0 { damageCondition = .warning }
-            else { damageCondition = .critical }
-            
-            // Return the worst condition
             return [tempCondition, damageCondition].max { $0.severity < $1.severity } ?? .good
         }
     }
     
-    // Wing conditions based on damage data
     private var wingConditions: [ComponentCondition] {
-        let wingDamages = [
-            telemetryViewModel.frontLeftWingDamage,
-            telemetryViewModel.frontRightWingDamage,
-            telemetryViewModel.rearWingDamage
-        ]
-        
-        return wingDamages.map { damage in
-            let damageAbs = abs(Int(damage))
-            if damageAbs < 10 { return .good }
-            else if damageAbs < 30 { return .warning }
-            else { return .critical }
+        [telemetryViewModel.frontLeftWingDamage,
+         telemetryViewModel.frontRightWingDamage,
+         telemetryViewModel.rearWingDamage].map { damage in
+            let absDamage = abs(Int(damage))
+            return absDamage < 10 ? .good : (absDamage < 30 ? .warning : .critical)
         }
     }
 }
@@ -175,8 +119,7 @@ struct DynamicSVGWebView: UIViewRepresentable {
     }
     
     func updateUIView(_ webView: WKWebView, context: Context) {
-        let htmlContent = generateDynamicSVGHTML()
-        webView.loadHTMLString(htmlContent, baseURL: nil)
+        webView.loadHTMLString(generateDynamicSVGHTML(), baseURL: nil)
     }
     
     private func generateDynamicSVGHTML() -> String {
@@ -265,22 +208,20 @@ struct TyreTile: View {
     
     var body: some View {
         HStack {
-            Text(title)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(CarConditionView.T.textSub)
+            Text(title.uppercased())
+                .font(AppTypography.label())
+                .foregroundStyle(AppColors.labelText)
                 .tracking(0.5)
             Spacer()
             Text(value)
-                .font(.system(size: 18, weight: .semibold))
+                .font(AppTypography.secondaryData())
                 .monospacedDigit()
-                .foregroundStyle(CarConditionView.T.text)
+                .foregroundStyle(AppColors.primaryData)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color(hex: "#DBE5E6"), lineWidth: 1)
-        )
+        .background(AppColors.secondaryTileBackground)
+        .neutralInfoTile(cornerRadius: 8)
     }
 }
 
@@ -296,8 +237,8 @@ struct LegendItem: View {
                 .frame(width: 12, height: 12)
             
             Text(text)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(CarConditionView.T.textSub)
+                .font(AppTypography.secondaryData())
+                .foregroundStyle(AppColors.labelText)
         }
     }
 }
@@ -311,17 +252,17 @@ enum ComponentCondition {
     
     var color: Color {
         switch self {
-        case .good: return CarConditionView.T.goodColor
-        case .warning: return CarConditionView.T.warningColor
-        case .critical: return CarConditionView.T.criticalColor
+        case .good: return AppColors.green
+        case .warning: return AppColors.amber
+        case .critical: return AppColors.red
         }
     }
     
     var hexColor: String {
         switch self {
         case .good: return "#30DB47"
-        case .warning: return "#FFA500"
-        case .critical: return "#FF4444"
+        case .warning: return "#F4E539"
+        case .critical: return "#FF0F3C"
         }
     }
     
@@ -348,6 +289,6 @@ struct CarConditionView_Previews: PreviewProvider {
         )
         .environmentObject(TelemetryViewModel())
         .padding()
-        .background(Color(hex: "#F6F8FA"))
+        .background(AppColors.appBackground)
     }
 }

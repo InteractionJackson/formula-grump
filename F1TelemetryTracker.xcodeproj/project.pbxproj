@@ -30,6 +30,7 @@
 		E1A1B1E32C8F509000123456 /* SVGPathParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1E42C8F509000123456 /* SVGPathParser.swift */; };
 		E1A1B1E52C8F50A000123456 /* PolylineGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1E62C8F50A000123456 /* PolylineGeometry.swift */; };
 		E1A1B1E72C8F50B000123456 /* LapSpeedChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1E82C8F50B000123456 /* LapSpeedChartView.swift */; };
+		E1A1B1EA2C8F50C000123456 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1B1E92C8F50C000123456 /* DesignSystem.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -57,6 +58,7 @@
 		E1A1B1E42C8F509000123456 /* SVGPathParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGPathParser.swift; sourceTree = "<group>"; };
 		E1A1B1E62C8F50A000123456 /* PolylineGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolylineGeometry.swift; sourceTree = "<group>"; };
 		E1A1B1E82C8F50B000123456 /* LapSpeedChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LapSpeedChartView.swift; sourceTree = "<group>"; };
+		E1A1B1E92C8F50C000123456 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +93,7 @@
 			children = (
 				E1A1B1A02C8F4E5A00123456 /* F1TelemetryTrackerApp.swift */,
 				E1A1B1A22C8F4E5A00123456 /* ContentView.swift */,
+				E1A1B1E92C8F50C000123456 /* DesignSystem.swift */,
 				E1A1B1C12C8F4EF000123456 /* Models */,
 				E1A1B1C22C8F4F0000123456 /* Network */,
 				E1A1B1C32C8F4F1000123456 /* ViewModels */,
@@ -255,6 +258,7 @@
 				E1A1B1E32C8F509000123456 /* SVGPathParser.swift in Sources */,
 				E1A1B1E52C8F50A000123456 /* PolylineGeometry.swift in Sources */,
 				E1A1B1E72C8F50B000123456 /* LapSpeedChartView.swift in Sources */,
+				E1A1B1EA2C8F50C000123456 /* DesignSystem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

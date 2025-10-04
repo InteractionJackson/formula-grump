@@ -34,6 +34,11 @@ enum AppColors {
     static let neutralInfoBorder = Color.white.opacity(0.08)
 }
 
+enum AppUIColors {
+    static let primaryRowInnerGlow = UIColor(red: 0x36/255, green: 0x52/255, blue: 0x58/255, alpha: 1)
+    static let tileBackground = UIColor(red: 0x25/255, green: 0x38/255, blue: 0x3C/255, alpha: 1)
+}
+
 enum AppTypography {
     static func label() -> Font {
         Font.custom("SF Pro Display", size: 10).weight(.semibold)
@@ -83,10 +88,13 @@ extension View {
                             .stroke(AppColors.primaryRowBorder, lineWidth: 1)
                     )
                     .overlay(
-                        RoundedCorners(radius: cornerRadius, corners: corners)
-                            .fill(AppColors.primaryRowInnerGlow.opacity(0.35))
-                            .blur(radius: 50)
-                            .blendMode(.plusLighter)
+                        InnerShadowHostView(
+                            cornerRadius: cornerRadius,
+                            color: AppUIColors.primaryRowInnerGlow,
+                            backgroundColor: AppUIColors.tileBackground,
+                            radius: 20,
+                            corners: corners
+                        )
                     )
             )
     }
@@ -150,6 +158,104 @@ struct RoundedCorners: Shape {
             cornerRadii: CGSize(width: radius, height: radius)
         )
         return Path(path.cgPath)
+    }
+}
+
+struct InnerShadowHostView: UIViewRepresentable {
+    let cornerRadius: CGFloat
+    let color: UIColor
+    let backgroundColor: UIColor
+    let radius: CGFloat
+    let corners: UIRectCorner
+
+    func makeUIView(context: Context) -> InnerShadowContainerView {
+        let view = InnerShadowContainerView()
+        view.configure(cornerRadius: cornerRadius,
+                       color: color,
+                       backgroundColor: backgroundColor,
+                       radius: radius,
+                       corners: corners)
+        return view
+    }
+
+    func updateUIView(_ uiView: InnerShadowContainerView, context: Context) {
+        uiView.configure(cornerRadius: cornerRadius,
+                         color: color,
+                         backgroundColor: backgroundColor,
+                         radius: radius,
+                         corners: corners)
+    }
+}
+
+final class InnerShadowContainerView: UIView {
+    private let shadowLayer = CALayer()
+    private var currentCornerRadius: CGFloat = 0
+    private var currentColor: UIColor = .clear
+    private var currentBackground: UIColor = .clear
+    private var currentRadius: CGFloat = 0
+    private var currentCorners: UIRectCorner = .allCorners
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isUserInteractionEnabled = false
+        layer.addSublayer(shadowLayer)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        shadowLayer.frame = bounds
+        shadowLayer.cornerRadius = currentCornerRadius
+        updateShadowPath()
+    }
+
+    func configure(cornerRadius: CGFloat,
+                   color: UIColor,
+                   backgroundColor: UIColor,
+                   radius: CGFloat,
+                   corners: UIRectCorner) {
+        currentCornerRadius = cornerRadius
+        currentColor = color
+        currentBackground = backgroundColor
+        currentRadius = radius
+        currentCorners = corners
+
+        shadowLayer.frame = bounds
+        shadowLayer.backgroundColor = backgroundColor.cgColor
+        shadowLayer.cornerRadius = cornerRadius
+
+        let insetRect = bounds.insetBy(dx: -radius, dy: -radius)
+        let outerPath = UIBezierPath(roundedRect: insetRect, cornerRadius: cornerRadius)
+        let innerPath = UIBezierPath(roundedRect: bounds, cornerRadius: cornerRadius).reversing()
+        outerPath.append(innerPath)
+
+        let shapeLayer = CAShapeLayer()
+        shapeLayer.path = outerPath.cgPath
+        shapeLayer.fillRule = .evenOdd
+        shapeLayer.shadowColor = color.cgColor
+        shapeLayer.shadowOffset = .zero
+        shapeLayer.shadowOpacity = 0.7
+        shapeLayer.shadowRadius = radius
+        shapeLayer.masksToBounds = true
+
+        shadowLayer.sublayers?.forEach { $0.removeFromSuperlayer() }
+        shadowLayer.addSublayer(shapeLayer)
+    }
+
+    private func updateShadowPath() {
+        guard let shapeLayer = shadowLayer.sublayers?.first as? CAShapeLayer else { return }
+        let radius = currentRadius
+        let cornerRadius = currentCornerRadius
+        let insetRect = bounds.insetBy(dx: -radius, dy: -radius)
+        let outerPath = UIBezierPath(roundedRect: insetRect, cornerRadius: cornerRadius)
+        let innerPath = UIBezierPath(roundedRect: bounds, cornerRadius: cornerRadius).reversing()
+        outerPath.append(innerPath)
+        shapeLayer.path = outerPath.cgPath
+        shapeLayer.shadowRadius = currentRadius
+        shapeLayer.shadowColor = currentColor.cgColor
     }
 }
 

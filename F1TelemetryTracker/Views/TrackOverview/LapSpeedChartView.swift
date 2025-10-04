@@ -13,7 +13,7 @@ struct LapSpeedChartView: View {
                     y: .value("Speed", point.speed)
                 )
                 .interpolationMethod(.catmullRom)
-                .foregroundStyle(Color(hex: "#ff00ff"))
+                .foregroundStyle(AppColors.purple)
                 .lineStyle(StrokeStyle(lineWidth: 3))
             }
 
@@ -23,17 +23,17 @@ struct LapSpeedChartView: View {
                     y: .value("Speed", point.speed)
                 )
                 .interpolationMethod(.catmullRom)
-                .foregroundStyle(Color(hex: "#00ff7f"))
+                .foregroundStyle(AppColors.green)
                 .lineStyle(StrokeStyle(lineWidth: 3))
             }
         }
         .chartLegend(position: .top, alignment: .leading)
         .chartYAxisLabel("Speed (km/h)")
         .chartXAxisLabel("Time (s)")
-        .padding()
+        .padding(AppLayout.tilePadding)
         .frame(minHeight: 220)
-        .background(Color(hex: "#18191c"))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(AppColors.secondaryTileBackground)
+        .clipShape(RoundedRectangle(cornerRadius: AppLayout.tileCornerRadius, style: .continuous))
     }
 }
 

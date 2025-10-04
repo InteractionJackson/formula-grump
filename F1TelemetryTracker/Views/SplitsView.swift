@@ -8,79 +8,50 @@ struct SplitsView: View {
     let lastLapTime: String
     let bestLapTime: String
     
-    // Design tokens
-    struct T {
-        static let canvas      = Color(hex: "#F6F8FA")
-        static let topCard     = Color(hex: "#FFFFFF")
-        static let bottomCard  = Color(hex: "#F6F8F9")
-        static let sectorBg    = Color(hex: "#F6F8F9")
-        static let lapTileBg   = Color(hex: "#DBE5E6")
-        static let stroke      = Color(hex: "#E6EDF2")
-        static let text        = Color(hex: "#0B0F14")
-        static let textSub     = Color(hex: "#6D7A88")
-        
-        static let rCard: CGFloat = 24
-        static let rSector: CGFloat = 8
-        static let rLapTile: CGFloat = 8
-        
-        static let padCard: CGFloat = 16
-        static let gap: CGFloat = 12
-    }
-    
     var body: some View {
-        // SINGLE TILE with white top and darker bottom section
         VStack(spacing: 0) {
-            // TOP SECTION: White background with title, current lap, and sectors
-            VStack(alignment: .leading, spacing: T.gap) {
-                // Title row
-                HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: AppLayout.tileSpacing) {
+                HStack(spacing: 12) {
                     Image(systemName: "stopwatch")
                         .font(.system(size: 18, weight: .regular))
-                        .foregroundStyle(T.text)
+                        .foregroundStyle(AppColors.tileTitle)
                     Text("Splits")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(T.text)
+                        .font(AppTypography.tileTitle())
+                        .foregroundStyle(AppColors.tileTitle)
                     Spacer()
                 }
                 
-                // Current lap row
                 HStack(alignment: .firstTextBaseline) {
-                    Text("CURRENT LAP")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(T.textSub)
+                    Text("Current Lap")
+                        .font(AppTypography.label())
+                        .foregroundStyle(AppColors.labelText)
                         .tracking(0.5)
                     Spacer()
                     Text(currentLapTime)
-                        .font(.custom("SFProDisplay-Semibold", size: 32))
+                        .font(AppTypography.primaryData())
                         .monospacedDigit()
-                        .foregroundStyle(T.text)
+                        .foregroundStyle(AppColors.primaryData)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                 }
                 
-                // Sectors row (3 columns)
-                HStack(spacing: T.gap) {
+                HStack(spacing: AppLayout.tileSpacing) {
                     SectorChip(title: "S1", value: sector1Time)
                     SectorChip(title: "S2", value: sector2Time)
                     SectorChip(title: "S3", value: sector3Time)
                 }
             }
-            .padding(T.padCard)
-            .background(T.topCard)
+            .padding(AppLayout.tilePadding)
+            .primaryRowBackground(cornerRadius: AppLayout.tileCornerRadius, corners: [.topLeft, .topRight])
             
-            // BOTTOM SECTION: Darker background with Last/Best
-            HStack(spacing: T.gap) {
-                LapTile(title: "LAST", value: lastLapTime)
-                LapTile(title: "BEST", value: bestLapTime)
+            HStack(spacing: AppLayout.tileSpacing) {
+                LapTile(title: "Last", value: lastLapTime)
+                LapTile(title: "Best", value: bestLapTime)
             }
-            .padding(T.padCard)
-            .background(T.bottomCard)
+            .padding(AppLayout.tilePadding)
+            .secondaryRowBackground(cornerRadius: AppLayout.tileCornerRadius, corners: [.bottomLeft, .bottomRight])
         }
-        .clipShape(RoundedRectangle(cornerRadius: T.rCard, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: T.rCard, style: .continuous)
-                .stroke(Color(hex: "#EFEFEF"), lineWidth: 1)
-        )
+        .primaryTileBackground()
     }
 }
 
@@ -92,20 +63,19 @@ private struct SectorChip: View {
     var body: some View {
         HStack {
             Text(title)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(SplitsView.T.text)
+                .font(AppTypography.secondaryData())
+                .foregroundStyle(AppColors.primaryData)
             Spacer(minLength: 8)
             Text(value)
-                .font(.system(size: 16, weight: .medium))
+                .font(AppTypography.secondaryData())
                 .monospacedDigit()
-                .foregroundStyle(SplitsView.T.text)
-                .opacity(0.9)
+                .foregroundStyle(AppColors.primaryData.opacity(0.9))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(
-            RoundedRectangle(cornerRadius: SplitsView.T.rSector, style: .continuous)
-                .fill(SplitsView.T.sectorBg)
+            RoundedRectangle(cornerRadius: AppLayout.chipCornerRadius, style: .continuous)
+                .fill(AppColors.secondaryTileBackground)
         )
     }
 }
@@ -115,22 +85,20 @@ private struct LapTile: View {
     let value: String
     var body: some View {
         HStack {
-            Text(title)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(SplitsView.T.textSub)
+            Text(title.uppercased())
+                .font(AppTypography.label())
+                .foregroundStyle(AppColors.labelText)
                 .tracking(0.5)
             Spacer()
             Text(value)
-                .font(.system(size: 18, weight: .semibold))
+                .font(AppTypography.secondaryData())
                 .monospacedDigit()
-                .foregroundStyle(SplitsView.T.text)
+                .foregroundStyle(AppColors.primaryData)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .overlay(
-            RoundedRectangle(cornerRadius: SplitsView.T.rLapTile, style: .continuous)
-                .stroke(SplitsView.T.lapTileBg, lineWidth: 1)
-        )
+        .background(AppColors.secondaryTileBackground)
+        .neutralInfoTile(cornerRadius: AppLayout.chipCornerRadius)
     }
 }
 
@@ -148,6 +116,6 @@ struct SplitsView_Previews: PreviewProvider {
             bestLapTime: "--:--.---"
         )
         .padding()
-        .background(Color(hex: "#F6F8FA"))
+        .background(AppColors.appBackground)
     }
 }
