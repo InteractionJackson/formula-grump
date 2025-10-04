@@ -37,6 +37,7 @@ enum AppColors {
 enum AppUIColors {
     static let primaryRowInnerGlow = UIColor(red: 0x36/255, green: 0x52/255, blue: 0x58/255, alpha: 1)
     static let tileBackground = UIColor(red: 0x25/255, green: 0x38/255, blue: 0x3C/255, alpha: 1)
+    static let primaryRowBackground = UIColor(red: 0x36/255, green: 0x52/255, blue: 0x58/255, alpha: 1)
 }
 
 enum AppTypography {
@@ -78,6 +79,23 @@ extension View {
             )
     }
 
+    func innerShadow(cornerRadius: CGFloat = AppLayout.tileCornerRadius,
+                     color: UIColor = AppUIColors.primaryRowInnerGlow,
+                     backgroundColor: UIColor = AppUIColors.primaryRowBackground,
+                     radius: CGFloat = 73,
+                     corners: UIRectCorner = .allCorners) -> some View {
+        overlay(
+            InnerShadowHostView(
+                cornerRadius: cornerRadius,
+                color: color,
+                backgroundColor: backgroundColor,
+                radius: radius,
+                corners: corners
+            )
+            .allowsHitTesting(false)
+        )
+    }
+
     func primaryRowBackground(cornerRadius: CGFloat = AppLayout.tileCornerRadius, corners: UIRectCorner = .allCorners) -> some View {
         self
             .background(
@@ -87,14 +105,12 @@ extension View {
                         RoundedCorners(radius: cornerRadius, corners: corners)
                             .stroke(AppColors.primaryRowBorder, lineWidth: 1)
                     )
-                    .overlay(
-                        InnerShadowHostView(
-                            cornerRadius: cornerRadius,
-                            color: AppUIColors.primaryRowInnerGlow,
-                            backgroundColor: AppUIColors.tileBackground,
-                            radius: 20,
-                            corners: corners
-                        )
+                    .innerShadow(
+                        cornerRadius: cornerRadius,
+                        color: AppUIColors.primaryRowInnerGlow,
+                        backgroundColor: AppUIColors.primaryRowBackground,
+                        radius: 73,
+                        corners: corners
                     )
             )
     }
