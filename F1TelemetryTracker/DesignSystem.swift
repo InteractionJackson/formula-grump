@@ -7,12 +7,15 @@ enum AppColors {
     static let tileBorder = Color(hex: "#42646B")
     static let tileShadow = Color.black.opacity(0.05)
 
-    static let primaryRowBackground = Color(hex: "#365258")
+    static let primaryRowBackground = Color(hex: "#25383C")
     static let primaryRowBorder = Color(hex: "#527C84")
     static let primaryRowInnerGlow = Color(hex: "#365258")
 
     static let secondaryRowBackground = Color(hex: "#365258")
     static let secondaryTileBackground = Color(hex: "#365258")
+
+    static let tertiaryTileBackground = Color(hex: "#2F474C")
+    static let tertiaryTileBorder = Color(hex: "#3E5E65")
 
     static let labelText = Color.white.opacity(0.7)
     static let tileTitle = Color.white
@@ -109,6 +112,7 @@ extension View {
                         corners: corners
                     )
             )
+            .clipShape(RoundedCorners(radius: cornerRadius, corners: corners))
     }
 
     func secondaryRowBackground(cornerRadius: CGFloat = AppLayout.tileCornerRadius, corners: UIRectCorner = .allCorners) -> some View {
@@ -121,6 +125,7 @@ extension View {
                             .stroke(AppColors.primaryRowBorder.opacity(0.6), lineWidth: 1)
                     )
             )
+            .clipShape(RoundedCorners(radius: cornerRadius, corners: corners))
     }
 
     func neutralInfoTile(cornerRadius: CGFloat = AppLayout.chipCornerRadius) -> some View {
@@ -128,6 +133,18 @@ extension View {
             .overlay(
                 RoundedCorners(radius: cornerRadius, corners: .allCorners)
                     .stroke(AppColors.neutralInfoBorder, lineWidth: 1)
+            )
+    }
+
+    func tertiaryInfoTile(cornerRadius: CGFloat = AppLayout.chipCornerRadius) -> some View {
+        self
+            .background(
+                RoundedCorners(radius: cornerRadius, corners: .allCorners)
+                    .fill(AppColors.tertiaryTileBackground)
+            )
+            .overlay(
+                RoundedCorners(radius: cornerRadius, corners: .allCorners)
+                    .stroke(AppColors.tertiaryTileBorder, lineWidth: 1)
             )
     }
 }
