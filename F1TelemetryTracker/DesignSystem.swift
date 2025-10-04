@@ -97,22 +97,26 @@ extension View {
     }
 
     func primaryRowBackground(cornerRadius: CGFloat = AppLayout.tileCornerRadius, corners: UIRectCorner = .allCorners) -> some View {
-        self
+        let shape = RoundedCorners(radius: cornerRadius, corners: corners)
+        return self
             .background(
-                RoundedCorners(radius: cornerRadius, corners: corners)
+                shape
                     .fill(AppColors.primaryRowBackground)
-                    .overlay(
-                        RoundedCorners(radius: cornerRadius, corners: corners)
-                            .stroke(AppColors.primaryRowBorder, lineWidth: 1)
-                    )
-                    .innerShadow(
-                        cornerRadius: cornerRadius,
-                        color: AppUIColors.primaryRowInnerGlow,
-                        radius: 73,
-                        corners: corners
-                    )
             )
-            .clipShape(RoundedCorners(radius: cornerRadius, corners: corners))
+            .overlay(
+                shape
+                    .stroke(AppColors.primaryRowBorder, lineWidth: 1)
+            )
+            .overlay(
+                InnerShadowHostView(
+                    cornerRadius: cornerRadius,
+                    color: AppUIColors.primaryRowInnerGlow,
+                    radius: 73,
+                    corners: corners
+                )
+                .allowsHitTesting(false)
+            )
+            .clipShape(shape)
     }
 
     func secondaryRowBackground(cornerRadius: CGFloat = AppLayout.tileCornerRadius, corners: UIRectCorner = .allCorners) -> some View {

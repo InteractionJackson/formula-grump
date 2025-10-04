@@ -98,10 +98,9 @@ struct WeatherPill: View {
                 }
                 
                 Text(label)
-                    .font(.system(size: 13, weight: .medium))
                     .font(AppTypography.label())
                     .foregroundStyle(AppColors.labelText)
-                    .tracking(0.5)
+                    .tracking(0.9)
             }
             
             Spacer()

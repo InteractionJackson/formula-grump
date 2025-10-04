@@ -73,10 +73,7 @@ private struct SectorChip: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: AppLayout.chipCornerRadius, style: .continuous)
-                .fill(AppColors.secondaryTileBackground)
-        )
+        .tertiaryInfoTile(cornerRadius: AppLayout.chipCornerRadius)
     }
 }
 
@@ -97,8 +94,7 @@ private struct LapTile: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(AppColors.secondaryTileBackground)
-        .neutralInfoTile(cornerRadius: AppLayout.chipCornerRadius)
+        .tertiaryInfoTile(cornerRadius: AppLayout.chipCornerRadius)
     }
 }
 

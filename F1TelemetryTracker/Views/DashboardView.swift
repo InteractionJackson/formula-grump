@@ -28,8 +28,8 @@ struct DashboardView: View {
                     onTapStatus: { showingConnectionStatus = true }
                 )
 
-                HStack(spacing: 24) {
-                    VStack(spacing: 24) {
+                HStack(spacing: 16) {
+                    VStack(spacing: 16) {
                         SpeedTile(viewModel: telemetryViewModel)
                         CarConditionView(
                             engineTemperature: UInt16(telemetryViewModel.engineTemperature),
@@ -39,7 +39,7 @@ struct DashboardView: View {
                         .environmentObject(telemetryViewModel)
                     }
 
-                    VStack(spacing: 24) {
+                    VStack(spacing: 16) {
                         SplitsView(
                             currentLapTime: formatTime(telemetryViewModel.currentLapTime),
                             sector1Time: formatSectorTime(telemetryViewModel.sector1Time),
@@ -53,11 +53,11 @@ struct DashboardView: View {
                             .environmentObject(telemetryViewModel)
                     }
                 }
-                .padding(.horizontal, 30)
 
                 Spacer()
             }
-            .padding(.top, 20)
+            .padding(.top, 16)
+            .padding(.horizontal, 16)
         }
         .sheet(isPresented: $showingConnectionStatus) {
             ConnectionStatusView(viewModel: telemetryViewModel)
