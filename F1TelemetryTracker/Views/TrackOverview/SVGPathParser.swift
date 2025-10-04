@@ -9,6 +9,10 @@ import Foundation
 import CoreGraphics
 
 struct SVGPathParser {
+
+    static func parsePath(from pathData: String) -> CGPath? {
+        parsePath(pathData, transform: .identity, viewBox: nil)
+    }
     
     // MARK: - Public Interface
     

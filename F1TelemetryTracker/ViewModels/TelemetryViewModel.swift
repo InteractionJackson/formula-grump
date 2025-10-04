@@ -14,6 +14,12 @@ struct DriverData {
     let penalty: String
 }
 
+struct LapSpeedPoint: Identifiable, Hashable {
+    let id = UUID()
+    let time: Double
+    let speed: Double
+}
+
 class TelemetryViewModel: ObservableObject {
     // Connection status
     @Published var isConnected: Bool = false
@@ -73,6 +79,8 @@ class TelemetryViewModel: ObservableObject {
     @Published var sector3Time: Float = -1.0     // -1 indicates no data
     @Published var lastLapTime: Float = -1.0     // -1 indicates no data
     @Published var bestLapTime: Float = -1.0     // -1 indicates no data
+    @Published var bestLapPoints: [LapSpeedPoint] = []
+    @Published var currentLapPoints: [LapSpeedPoint] = []
     
     // Leaderboard data
     @Published var leaderboardData: [DriverData] = []
@@ -100,7 +108,6 @@ class TelemetryViewModel: ObservableObject {
     private var currentTrackIdForAlignment: Int8 = -1
     private var worldSampleCount = 0
     private let minSamplesForAlignment = 100
-    private var cachedTrackProjector: (trackId: Int8, projector: TrackProjector)? // Cache projector per track to avoid rebuilding every sample
     
     private var telemetryReceiver: SimpleTelemetryReceiver
     private var cancellables = Set<AnyCancellable>()
@@ -597,15 +604,9 @@ class TelemetryViewModel: ObservableObject {
     }
 
     private func trackProjector(for trackId: Int8) -> TrackProjector? {
-        if let cached = cachedTrackProjector, cached.trackId == trackId {
-            return cached.projector
-        }
-        
         let resolvedTrackId = TrackId(rawValue: trackId) ?? .unknown
         let geometry = TrackGeometryCache.shared.geometry(for: resolvedTrackId)
-        let projector = TrackProjector(trackGeometry: TrackGeometryImpl(geometry: geometry))
-        cachedTrackProjector = (trackId, projector) // Cached on main thread via Combine updates
-        return projector
+        return TrackProjector(trackGeometry: TrackGeometryImpl(geometry: geometry))
     }
     
     private func transformWorldToTrackCoordinates(worldPosition: CGPoint) -> CGPoint {
@@ -648,7 +649,6 @@ class TelemetryViewModel: ObservableObject {
         alignmentIsSolved = false
         worldToGeom = .identity
         worldSampleCount = 0
-        cachedTrackProjector = nil // Track changed/realigned, rebuild projector on next use
         
         #if DEBUG
         print("🔄 COORDINATE ALIGNMENT RESET for track \(trackId)")

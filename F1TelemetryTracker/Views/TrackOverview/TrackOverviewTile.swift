@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 // MARK: - Track Overview Tile
 struct TrackOverviewTile: View {
@@ -29,142 +30,30 @@ struct TrackOverviewTile: View {
     }
     
     
-    private var carMarkers: [CarMarker] {
-        var markers: [CarMarker] = []
-        
-        // Use real motion data if available
-        if !telemetryViewModel.carProgresses.isEmpty {
-            // Create markers from motion data and leaderboard data
-            for (index, driver) in telemetryViewModel.leaderboardData.enumerated() {
-                guard index < telemetryViewModel.carProgresses.count else { break }
-                
-                let progress = telemetryViewModel.carProgresses[index]
-            
-            // Extract driver code from name (first 3 characters)
-            let driverCode = String(driver.name.prefix(3)).uppercased()
-            
-            // Determine if this is the focus driver (player or leader)
-            let isFocus = index == 0 || driverCode == "PLR"
-            
-            // Use team colors based on position
-            let teamColor = TrackOverviewStyle.teamColor(for: index)
-            
-            let marker = CarMarker(
-                driverCode: driverCode,
-                progress: CGFloat(progress),
-                color: teamColor,
-                isFocus: isFocus,
-                position: .zero, // Will be calculated by TrackMapView
-                driverStatus: driver.status == "On Track" ? 4 : 0
-            )
-            
-            markers.append(marker)
-            }
-        } else {
-            // Fallback to simplified leaderboard-based positioning
-            for (index, driver) in telemetryViewModel.leaderboardData.enumerated() {
-                let baseProgress = Float(index) / Float(max(1, telemetryViewModel.leaderboardData.count - 1))
-                let progressVariation = Float.random(in: -0.05...0.05) // Add some variation
-                let progress = max(0.0, min(1.0, baseProgress + progressVariation))
-                
-                // Extract driver code from name (first 3 characters)
-                let driverCode = String(driver.name.prefix(3)).uppercased()
-                
-                // Determine if this is the focus driver (player or leader)
-                let isFocus = index == 0 || driverCode == "PLR"
-                
-                // Use team colors based on position
-                let teamColor = TrackOverviewStyle.teamColor(for: index)
-                
-                let marker = CarMarker(
-                    driverCode: driverCode,
-                    progress: CGFloat(progress),
-                    color: teamColor,
-                    isFocus: isFocus,
-                    position: .zero, // Will be calculated by TrackMapView
-                    driverStatus: driver.status == "On Track" ? 4 : 0
-                )
-                
-                markers.append(marker)
-            }
-        }
-        
-        // If no markers created, create a player marker using lap progress
-        if markers.isEmpty {
-            let playerMarker = CarMarker(
-                driverCode: "PLR",
-                progress: CGFloat(telemetryViewModel.lapProgress),
-                color: TrackOverviewStyle.teamColor(for: 0),
-                isFocus: true,
-                position: .zero,
-                driverStatus: 4 // On track
-            )
-            markers.append(playerMarker)
-        }
-        
-        return markers
-    }
-    
     var body: some View {
-        // SINGLE TILE with white top and darker bottom section (matching Splits tile pattern)
         VStack(spacing: 0) {
-            // TOP SECTION: White background with title and track map
             VStack(alignment: .leading, spacing: TrackOverviewStyle.spacing) {
-                // Title row
                 HStack(spacing: 10) {
-                    Image(systemName: "road.lanes")
+                    Image(systemName: "chart.xyaxis.line")
                         .font(.system(size: 18, weight: .regular))
                         .foregroundStyle(TrackOverviewStyle.titleText)
-                    
-                    Text("Track overview")
+                    Text("Lap Comparison (Time vs Speed)")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(TrackOverviewStyle.titleText)
-                    
                     Spacer()
                 }
-                
-                // Track map - expands to fill available space
-                GeometryReader { geometry in
-                    TrackMapView(
-                        trackGeometry: trackProfileStore.currentProfile.geometry,
-                        carMarkers: carMarkers,
-                        canvasSize: CGSize(
-                            width: geometry.size.width,
-                            height: geometry.size.height
-                        )
-                    )
-                    .background(Color.clear)
-                }
-                .frame(maxHeight: .infinity)
+                LapSpeedChartView(bestLapPoints: telemetryViewModel.bestLapPoints,
+                                  currentLapPoints: telemetryViewModel.currentLapPoints)
             }
             .padding(TrackOverviewStyle.cardPadding)
             .background(TrackOverviewStyle.cardBackground)
-            
-            // BOTTOM SECTION: Darker background with weather pills (matching Splits tile style)
             HStack(spacing: TrackOverviewStyle.spacing) {
-                // Track temperature pill
-                WeatherPill(
-                    icon: nil,
-                    label: "TRACK",
-                    value: formatTemperature(telemetryViewModel.trackTemperature)
-                )
-                
-                // Rain pill
-                WeatherPill(
-                    icon: nil,
-                    label: "RAIN",
-                    value: formatRain(telemetryViewModel.rainIntensity)
-                )
-                
-                // Weather pill
-                WeatherPill(
-                    icon: TrackOverviewStyle.weatherIcon(for: telemetryViewModel.weather),
-                    label: "WEATHER",
-                    value: ""
-                )
+                WeatherPill(icon: nil, label: "TRACK", value: formatTemperature(telemetryViewModel.trackTemperature))
+                WeatherPill(icon: nil, label: "RAIN", value: formatRain(telemetryViewModel.rainIntensity))
+            WeatherPill(icon: TrackOverviewStyle.weatherIcon(for: telemetryViewModel.weather), label: "WEATHER", value: "")
             }
             .padding(TrackOverviewStyle.cardPadding)
-            .background(Color(hex: "#F6F8F9")) // Same as Splits tile bottom section
+            .background(Color(hex: "#F6F8F9"))
         }
         .clipShape(RoundedRectangle(cornerRadius: TrackOverviewStyle.cardRadius, style: .continuous))
         .overlay(
