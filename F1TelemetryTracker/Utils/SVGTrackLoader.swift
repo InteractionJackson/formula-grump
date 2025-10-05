@@ -2,16 +2,12 @@ import Foundation
 import CoreGraphics
 
 struct SVGTrackLoader {
-
-    static func loadPoints(fromSVGFileAt url: URL, sampleCount: Int = 400) -> [CGPoint] {
-        let svgData: Data
-        do {
-            svgData = try Data(contentsOf: url)
-        } catch {
+    static func loadTrackPath(fromSVGFileAt url: URL, sampleCount: Int = 500) -> TrackPath? {
+        guard let svgData = try? Data(contentsOf: url) else {
             #if DEBUG
-            print("❌ Failed to read SVG at \(url.path): \(error)")
+            print("❌ Failed to read SVG at \(url.path)")
             #endif
-            return []
+            return nil
         }
 
         guard let svgString = String(data: svgData, encoding: .utf8) ??
@@ -19,40 +15,30 @@ struct SVGTrackLoader {
             #if DEBUG
             print("❌ Unsupported encoding for SVG \(url.lastPathComponent)")
             #endif
-            return []
+            return nil
         }
 
         guard let pathString = firstPathD(in: svgString) else {
             #if DEBUG
-            print("❌ No <path d="..."> found in \(url.lastPathComponent)")
+            print("❌ No <path d=...> found in \(url.lastPathComponent)")
             #endif
-            return []
+            return nil
         }
 
         guard let cgPath = SVGPathParser.parsePath(from: pathString) else {
             #if DEBUG
             print("❌ SVGPathParser failed for \(url.lastPathComponent)")
             #endif
-            return []
+            return nil
         }
 
         let polyline = PolylineGeometry.fromPath(cgPath)
-        let samples = max(sampleCount, 32)
-        var points: [CGPoint] = []
-        points.reserveCapacity(samples + 1)
-        let step = 1.0 / CGFloat(samples)
-        for i in 0...samples {
-            let t = CGFloat(i) * step
-            points.append(polyline.point(at: t))
-        }
+        let resampled = resample(polyline, samples: sampleCount)
+        let normalized = TrackGeometryValidator.normalize(points: resampled)
 
-        var normalized = TrackGeometryValidator.normalize(points: points)
-        if let first = normalized.first, let last = normalized.last {
-            if hypot(first.x - last.x, first.y - last.y) > 0.5 {
-                normalized.append(first)
-            }
-        }
-        return normalized
+        guard !normalized.isEmpty else { return nil }
+
+        return TrackPath(points: normalized)
     }
 
     static func repositoryTrackURL(named name: String) -> URL {
@@ -61,21 +47,35 @@ struct SVGTrackLoader {
     }
 
     private static func firstPathD(in svg: String) -> String? {
-        if let range = svg.range(of: "<path"),
-           let dRange = svg[range.lowerBound...].range(of: " d=\"") {
+        if let pathRange = svg.range(of: "<path"),
+           let dRange = svg[pathRange.lowerBound...].range(of: " d=\"") {
             let start = dRange.upperBound
             if let end = svg[start...].firstIndex(of: "\"") {
                 return String(svg[start..<end])
             }
         }
-        if let range = svg.range(of: "<path"),
-           let dRange = svg[range.lowerBound...].range(of: " d='") {
+        if let pathRange = svg.range(of: "<path"),
+           let dRange = svg[pathRange.lowerBound...].range(of: " d='") {
             let start = dRange.upperBound
             if let end = svg[start...].firstIndex(of: "'") {
                 return String(svg[start..<end])
             }
         }
         return nil
+    }
+
+    private static func resample(_ geometry: PolylineGeometry, samples: Int) -> [CGPoint] {
+        let count = max(samples, 32)
+        var points: [CGPoint] = []
+        points.reserveCapacity(count)
+
+        let step = 1.0 / CGFloat(count - 1)
+        for i in 0..<count {
+            let t = CGFloat(i) * step
+            points.append(geometry.point(at: t))
+        }
+
+        return points
     }
 }
 

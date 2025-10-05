@@ -111,6 +111,13 @@ class TelemetryViewModel: ObservableObject {
     
     private var telemetryReceiver: SimpleTelemetryReceiver
     private var cancellables = Set<AnyCancellable>()
+    private var currentLapElapsedSeconds: Double = 0
+    private var currentLapNumber: Int = 0
+    private var lastSampledTime: Double = -1
+    private var lapStartDate: Date?
+    private let maxSamplesPerLap = 1500
+    private let minLapSampleInterval: Double = 0.15
+    private var bestLapTimeSeconds: Double = .infinity
     
     init() {
         self.telemetryReceiver = SimpleTelemetryReceiver(port: 20777)
@@ -271,28 +278,30 @@ class TelemetryViewModel: ObservableObject {
         
         rawSpeed = newRawSpeed
         rawRPM = newRawRPM
-        
+
         // Direct updates for non-interpolated values
         gear = Self.clamp(Int(telemetry.gear), min: -1, max: 8)
         engineTemperature = Self.clamp(Int(telemetry.engineTemperature), min: 0, max: 200)
-        
+
         // Clamp control inputs
         throttlePercent = Self.clamp(Double(telemetry.throttle), min: 0.0, max: 1.0)
         brakePercent = Self.clamp(Double(telemetry.brake), min: 0.0, max: 1.0)
         steerPercent = Self.clamp(Double(telemetry.steer), min: -1.0, max: 1.0)
         isDRSActive = telemetry.drs > 0
-        
+
         lastTelemetryUpdate = Date()
-        
+
         // Clamp values to valid ranges
         throttlePercent = max(0.0, min(1.0, throttlePercent))
         brakePercent = max(0.0, min(1.0, brakePercent))
         steerPercent = max(-1.0, min(1.0, steerPercent))
-        
+
         let safeRPM = max(0, min(Int.max, Int(rpm.isFinite ? rpm : 0)))
         let safeThrottle = max(0, min(100, Int((throttlePercent*100).isFinite ? throttlePercent*100 : 0)))
         let safeBrake = max(0, min(100, Int((brakePercent*100).isFinite ? brakePercent*100 : 0)))
         print("🎮 UI Values: Speed=\(speedMPH)mph, RPM=\(safeRPM), Gear=\(gear), Throttle=\(safeThrottle)%, Brake=\(safeBrake)%")
+
+        updateLapSpeedSeries(withSpeed: newRawSpeed)
     }
     
     private func updateStatusData(_ status: CarStatusData?) {
@@ -372,12 +381,73 @@ class TelemetryViewModel: ObservableObject {
             lapProgress = min(1.0, max(0.0, lapData.lapDistance / estimatedTrackLength))
         }
         
+        let lapNumber = Int(lapData.currentLapNum)
+        if currentLapNumber == 0 {
+            currentLapNumber = lapNumber
+        }
+
+        if lapNumber != currentLapNumber {
+            let finishedLapSeconds = Double(lapData.lastLapTimeInMS) / 1000.0
+            finalizeLapIfNeeded(lastLapSeconds: finishedLapSeconds)
+            currentLapPoints = []
+            currentLapElapsedSeconds = 0
+            lastSampledTime = -1
+            currentLapNumber = lapNumber
+            lapStartDate = Date()
+        }
+
+        if let lapStartDate {
+            currentLapElapsedSeconds = Date().timeIntervalSince(lapStartDate)
+        } else {
+            currentLapElapsedSeconds = Double(lapData.currentLapTimeInMS) / 1000.0
+            lapStartDate = Date().addingTimeInterval(-currentLapElapsedSeconds)
+        }
+
+        if bestLapTimeSeconds.isFinite {
+            bestLapTime = Float(bestLapTimeSeconds)
+        } else {
+            bestLapTime = -1
+        }
+
         print("🏁 LAP DATA UPDATE:")
         print("   Current Lap: \(formatTime(currentLapTime))")
         print("   Last Lap: \(formatTime(lastLapTime))")
         print("   Sector 1: \(formatTime(sector1Time))")
         print("   Sector 2: \(formatTime(sector2Time))")
         print("   Lap Progress: \(String(format: "%.1f%%", lapProgress * 100))")
+    }
+
+    private func finalizeLapIfNeeded(lastLapSeconds: Double) {
+        guard lastLapSeconds > 0 else { return }
+        let finishedLapPoints = currentLapPoints
+        guard !finishedLapPoints.isEmpty else { return }
+
+        if lastLapSeconds < bestLapTimeSeconds {
+            bestLapTimeSeconds = lastLapSeconds
+            bestLapPoints = finishedLapPoints
+            bestLapTime = Float(lastLapSeconds)
+        }
+    }
+
+    private func updateLapSpeedSeries(withSpeed speedKMH: Double) {
+        guard currentLapElapsedSeconds >= 0 else { return }
+        let clampedSpeed = max(0, min(speedKMH, 400))
+        guard clampedSpeed > 0 else { return }
+
+        let sampleTime = currentLapElapsedSeconds
+        guard sampleTime.isFinite else { return }
+
+        if lastSampledTime >= 0, sampleTime - lastSampledTime < minLapSampleInterval {
+            return
+        }
+
+        if currentLapPoints.count >= maxSamplesPerLap {
+            currentLapPoints.removeFirst()
+        }
+
+        let point = LapSpeedPoint(time: sampleTime, speed: clampedSpeed)
+        currentLapPoints.append(point)
+        lastSampledTime = sampleTime
     }
     
     private func getTyreCompoundName(_ compound: UInt8) -> String {
