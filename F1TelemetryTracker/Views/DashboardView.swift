@@ -5,23 +5,15 @@ struct DashboardView: View {
     @State private var showingConnectionStatus = false
     
     var body: some View {
-        TabView {
             dashboardPage
-                .tag(0)
-
-            LeaderboardView()
-                .environmentObject(telemetryViewModel)
-                .tag(1)
-        }
-        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-        .background(AppColors.appBackground)
+            .background(AppColors.appBackground)
     }
     
     private var dashboardPage: some View {
         ZStack {
             AppColors.appBackground
                 .ignoresSafeArea()
-
+            
             VStack(spacing: 24) {
                 ConnectionHeader(
                     isConnected: telemetryViewModel.isConnected,
@@ -31,29 +23,29 @@ struct DashboardView: View {
                 HStack(spacing: 16) {
                     VStack(spacing: 16) {
                         SpeedTile(viewModel: telemetryViewModel)
-                        CarConditionView(
-                            engineTemperature: UInt16(telemetryViewModel.engineTemperature),
-                            brakesTemperature: telemetryViewModel.brakesTemperature,
-                            tyresSurfaceTemperature: telemetryViewModel.tyresSurfaceTemperature
-                        )
-                        .environmentObject(telemetryViewModel)
-                    }
-
-                    VStack(spacing: 16) {
-                        SplitsView(
-                            currentLapTime: formatTime(telemetryViewModel.currentLapTime),
-                            sector1Time: formatSectorTime(telemetryViewModel.sector1Time),
-                            sector2Time: formatSectorTime(telemetryViewModel.sector2Time),
-                            sector3Time: formatSectorTime(telemetryViewModel.sector3Time),
-                            lastLapTime: formatTime(telemetryViewModel.lastLapTime),
-                            bestLapTime: formatTime(telemetryViewModel.bestLapTime)
-                        )
-
-                        TrackOverviewTile()
+                            CarConditionView(
+                                engineTemperature: UInt16(telemetryViewModel.engineTemperature),
+                                brakesTemperature: telemetryViewModel.brakesTemperature,
+                                tyresSurfaceTemperature: telemetryViewModel.tyresSurfaceTemperature
+                            )
                             .environmentObject(telemetryViewModel)
                     }
+                    
+                    VStack(spacing: 16) {
+                        SplitsView(
+                        currentLapTime: formatTime(telemetryViewModel.currentLapTime),
+                        sector1Time: formatSectorTime(telemetryViewModel.sector1Time),
+                        sector2Time: formatSectorTime(telemetryViewModel.sector2Time),
+                        sector3Time: formatSectorTime(telemetryViewModel.sector3Time),
+                        lastLapTime: formatTime(telemetryViewModel.lastLapTime),
+                        bestLapTime: formatTime(telemetryViewModel.bestLapTime)
+                    )
+                        
+                        TrackOverviewTile()
+                            .environmentObject(telemetryViewModel)
                 }
-
+                }
+                
                 Spacer()
             }
             .padding(.top, 16)
