@@ -20,6 +20,7 @@ class SimpleTelemetryReceiver: ObservableObject {
     @Published var currentLapData: LapData?
     @Published var currentSessionData: PacketSessionData?
     @Published var allLapData: [LapData] = []
+    @Published var driverCodes: [String] = Array(repeating: "", count: 22)
     @Published var participantNames: [String] = Array(repeating: "Unknown", count: 22)
     @Published var isAI: [Bool] = Array(repeating: true, count: 22)
     @Published var currentCarDamage: CarDamageData?
@@ -693,6 +694,9 @@ class SimpleTelemetryReceiver: ObservableObject {
         }
         
         var allCarsLapData: [LapData] = []
+        var lapDistances: [Float] = Array(repeating: 0.0, count: 22)
+        var driverCodes: [String] = Array(repeating: "", count: 22)
+        let participantCodes = self.driverCodes
         
         // Parse lap data for ALL 22 cars using fixed offsets
         for carIndex in 0..<cars {
@@ -775,6 +779,13 @@ class SimpleTelemetryReceiver: ObservableObject {
             )
             
             allCarsLapData.append(lapData)
+            lapDistances[carIndex] = lapDistance
+            if carIndex < participantCodes.count {
+                let storedCode = participantCodes[carIndex]
+                if !storedCode.isEmpty {
+                    driverCodes[carIndex] = storedCode
+                }
+            }
             
             // Debug output for player car
             if carIndex == Int(playerCarIndex) {
@@ -800,17 +811,16 @@ class SimpleTelemetryReceiver: ObservableObject {
         }
         
         // Update both individual player data and all cars data
-        let playerLapData = allCarsLapData[safe: Int(playerCarIndex)]
+        let playerIndex = Int(playerCarIndex)
+        let playerLapData = (playerIndex >= 0 && playerIndex < allCarsLapData.count) ? allCarsLapData[playerIndex] : nil
         
         DispatchQueue.main.async {
-            // Update all lap data for leaderboard
             self.allLapData = allCarsLapData
-            
-            // Update player's current lap data for dashboard
             if let playerData = playerLapData {
                 self.currentLapData = playerData
             }
-            
+            // ViewModel will observe these published arrays
+            self.driverCodes = driverCodes
             print("🏁 ALL LAP DATA SUCCESS! Parsed \(allCarsLapData.count) cars")
             if let playerData = playerLapData {
                 let currentLapTime = Float(playerData.currentLapTimeInMS) / 1000.0
@@ -884,6 +894,7 @@ class SimpleTelemetryReceiver: ObservableObject {
             )
             
             self.currentSessionData = sessionData
+            // Track length is part of session data; ViewModel observes currentSessionData
             print("🏁 SUCCESS! Session data published - Track ID: \(trackId) (Bahrain), \(totalLaps) laps, Safety car: \(safetyCarStatus)")
         }
     }
@@ -904,6 +915,7 @@ class SimpleTelemetryReceiver: ObservableObject {
         
         var names: [String] = Array(repeating: "Unknown", count: 22)
         var aiFlags: [Bool] = Array(repeating: true, count: 22)
+        var codes: [String] = Array(repeating: "", count: 22)
         
         // F1 24 ParticipantData is 56 bytes per participant
         let participantDataSize = PacketSizes.participantDataSize
@@ -922,7 +934,7 @@ class SimpleTelemetryReceiver: ObservableObject {
             var pPos = participantOffset
             let aiControlled = data[pPos]; pPos += 1        // Byte 0
             let driverId = data[pPos]; pPos += 1            // Byte 1
-            _ = data[pPos]; pPos += 1           // Byte 2
+            let networkId = data[pPos]; pPos += 1           // Byte 2
             _ = data[pPos]; pPos += 1              // Byte 3
             _ = data[pPos]; pPos += 1          // Byte 5
             _ = data[pPos]; pPos += 1         // Byte 6
@@ -934,16 +946,19 @@ class SimpleTelemetryReceiver: ObservableObject {
             
             _ = data[pPos]; pPos += 1       // Byte 55
             
+            let code = driverCode(for: driverId, networkId: networkId)
             names[i] = name
+            codes[i] = code
             // Treat driverId==255 as network human; otherwise rely on aiControlled
             aiFlags[i] = (aiControlled == 1) || (driverId != 255 ? false : true)
             
-            print("👤 Car \(i): '\(name)' (AI: \(aiControlled == 1 ? "Yes" : "No"), DriverID: \(driverId))")
+            print("👤 Car \(i): '\(name)' Code=\(code) (AI: \(aiControlled == 1 ? "Yes" : "No"), DriverID: \(driverId))")
         }
         
         DispatchQueue.main.async {
             self.participantNames = names
             self.isAI = aiFlags
+            self.driverCodes = codes
             print("👥 SUCCESS! Participant names and AI flags updated")
         }
     }
@@ -1075,6 +1090,31 @@ class SimpleTelemetryReceiver: ObservableObject {
         return String(data: nameData, encoding: .utf8) ?? "Unknown"
     }
     
+    private func driverCode(for driverId: UInt8, networkId: UInt8) -> String {
+        if networkId != 255 {
+            return networkCodeMap[Int(networkId)] ?? "CAR"
+        }
+        return driverCodeMap[Int(driverId)] ?? "CAR"
+    }
+    
+    private var driverCodeMap: [Int: String] {
+        [
+            0: "SAI", 1: "MAG", 2: "ALO", 3: "HAM", 4: "RUS", 5: "OCO", 6: "STR",
+            7: "BOT", 8: "TSU", 9: "NOR", 10: "VER", 11: "GAS", 12: "LEC",
+            13: "PER", 14: "LAW", 15: "PIA", 16: "ALB", 17: "ZHO", 18: "HUL",
+            19: "SAR", 20: "BEA"
+        ]
+    }
+    
+    private var networkCodeMap: [Int: String] {
+        [
+            0: "P1", 1: "P2", 2: "P3", 3: "P4", 4: "P5", 5: "P6", 6: "P7", 7: "P8",
+            8: "P9", 9: "P10", 10: "P11", 11: "P12", 12: "P13", 13: "P14",
+            14: "P15", 15: "P16", 16: "P17", 17: "P18", 18: "P19", 19: "P20",
+            20: "P21", 21: "P22", 255: "P"
+        ]
+    }
+    
     // MARK: - Motion Packet Parsing
     
     private func parseMotionPacket(_ data: Data) {
@@ -1177,12 +1217,5 @@ class SimpleTelemetryReceiver: ObservableObject {
         } else {
             packetRates[packetId] = (count: 1, lastReset: now)
         }
-    }
-}
-
-// MARK: - Array Safe Access Extension
-extension Array {
-    subscript(safe index: Index) -> Element? {
-        return indices.contains(index) ? self[index] : nil
     }
 }

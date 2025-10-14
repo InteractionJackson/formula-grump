@@ -41,7 +41,7 @@ struct DashboardView: View {
                         bestLapTime: formatTime(telemetryViewModel.bestLapTime)
                     )
                         
-                        TrackOverviewTile()
+                        CarConditionView()
                             .environmentObject(telemetryViewModel)
                 }
                 }

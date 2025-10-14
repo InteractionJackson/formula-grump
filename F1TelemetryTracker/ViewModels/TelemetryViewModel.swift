@@ -99,6 +99,9 @@ class TelemetryViewModel: ObservableObject {
     // Car position data from motion packets
     @Published var carPositions: [CGPoint] = Array(repeating: .zero, count: 22)  // World positions for all cars
     @Published var carProgresses: [Float] = Array(repeating: 0.0, count: 22)     // Track progress for all cars
+    @Published var carLapDistances: [Float] = Array(repeating: 0.0, count: 22)
+    @Published var carDriverCodes: [String] = Array(repeating: "", count: 22)
+    @Published var trackLengthMetres: Float = 0.0
     
     // MARK: - Coordinate Transform State
     private var worldMin = CGPoint(x: CGFloat.infinity, y: CGFloat.infinity)
@@ -176,12 +179,20 @@ class TelemetryViewModel: ObservableObject {
                 self?.updateLapData(lapData)
             }
             .store(in: &cancellables)
-        
-        // All lap data (for leaderboard)
+
+        telemetryReceiver.$driverCodes
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.carDriverCodes, on: self)
+            .store(in: &cancellables)
+
         telemetryReceiver.$allLapData
             .receive(on: DispatchQueue.main)
             .sink { [weak self] allLapData in
-                self?.updateLeaderboard(allLapData)
+                guard let self else { return }
+                if !allLapData.isEmpty {
+                    self.carLapDistances = allLapData.map { $0.lapDistance }
+                }
+                self.updateLeaderboard(allLapData)
             }
             .store(in: &cancellables)
         
@@ -603,6 +614,10 @@ class TelemetryViewModel: ObservableObject {
         
         trackTemperature = sessionData.trackTemperature
         weather = sessionData.weather
+        trackLengthMetres = Float(sessionData.trackLength)
+        if trackId == -1 {
+            trackId = TrackId.britain.rawValue
+        }
         
         // Calculate rain intensity from weather forecast if available
         if !sessionData.weatherForecastSamples.isEmpty {
@@ -674,13 +689,13 @@ class TelemetryViewModel: ObservableObject {
     }
 
     private func trackProjector(for trackId: Int8) -> TrackProjector? {
-        let resolvedTrackId = TrackId(rawValue: trackId) ?? .unknown
+        let resolvedTrackId = TrackId(rawValue: trackId) ?? .britain
         let geometry = TrackGeometryCache.shared.geometry(for: resolvedTrackId)
         return TrackProjector(trackGeometry: TrackGeometryImpl(geometry: geometry))
     }
     
     private func transformWorldToTrackCoordinates(worldPosition: CGPoint) -> CGPoint {
-        let currentTrackId = TrackId(rawValue: self.trackId) ?? .unknown
+        let currentTrackId = TrackId(rawValue: self.trackId) ?? .britain
         let geometry = TrackGeometryCache.shared.geometry(for: currentTrackId)
         
         // Reset alignment if track changed
@@ -735,14 +750,14 @@ class TelemetryViewModel: ObservableObject {
         worldSampleCount += 1
     }
     
-    private func solveWorldToGeometryTransform(geometry: PolylineGeometry) {
+    private func solveWorldToGeometryTransform(geometry: PolylineGeometry) -> CGFloat {
         let g = geometry.bounds
         guard worldMin.x.isFinite, worldMax.x.isFinite,
               worldMin.y.isFinite, worldMax.y.isFinite else {
             #if DEBUG
             print("⚠️ ALIGNMENT FAILED: Invalid world bounds")
             #endif
-            return
+            return .greatestFiniteMagnitude
         }
         
         let w = CGRect(
@@ -755,7 +770,7 @@ class TelemetryViewModel: ObservableObject {
             #if DEBUG
             print("⚠️ ALIGNMENT FAILED: World bounds too small (\(w.width) x \(w.height))")
             #endif
-            return
+            return .greatestFiniteMagnitude
         }
         
         #if DEBUG
@@ -823,6 +838,7 @@ class TelemetryViewModel: ObservableObject {
         #if DEBUG
         print("✅ ALIGNMENT SOLVED: score=\(best.score)")
         #endif
+        return best.score
     }
     
     private func sampleProjectionError(transform: CGAffineTransform, geometry: PolylineGeometry) -> CGFloat {
@@ -977,5 +993,12 @@ class TelemetryViewModel: ObservableObject {
     
     private static func lerp(_ a: Double, _ b: Double, _ t: Double) -> Double {
         return a * (1.0 - t) + b * t
+    }
+}
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        guard index >= 0 && index < count else { return nil }
+        return self[index]
     }
 }
